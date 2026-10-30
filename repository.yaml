@@ -1,0 +1,5 @@
+# Репозиторий приложений (аддонов) Home Assistant: Настройки → Приложения → Установить приложения →
+# ⋮ → Репозитории → https://github.com/indoor25/AssisTV. Аддон — в ha-addon/epg_builder.
+name: AssisTV
+url: https://github.com/indoor25/AssisTV
+maintainer: indoor25

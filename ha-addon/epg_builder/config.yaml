@@ -1,0 +1,67 @@
+name: AssisTV
+version: "2.21.0"
+slug: epg_builder
+# описание и названия опций на других языках — translations/*.yaml
+description: IPTV player for Samsung Tizen TVs with voice control — playlists, TV guide, movies and TVs
+url: https://github.com/indoor25/AssisTV
+# страница «Телевизоры и плейлисты» — в боковом меню HA (ingress) и напрямую на :8765
+ingress: true
+ingress_port: 8765
+panel_icon: mdi:television-guide
+panel_title: AssisTV
+arch:
+  - aarch64
+  - amd64
+  - armv7
+startup: application
+boot: auto
+# Карточка HA: плейлист и сама карточка кладутся в /homeassistant/www/tizen-iptv (= /local/tizen-iptv),
+# порядок каналов с TV приходит по MQTT (логин к Mosquitto выдаёт Supervisor)
+map:
+  - type: homeassistant_config
+    read_only: false
+  # /config — папка аддона в addon_configs: плагины, установленные со страницы (plugins.js)
+  - type: addon_config
+    read_only: false
+# включение TV: аддон вызывает remote.send_command KEY_POWER через API ядра HA; список сущностей для страницы аддона
+homeassistant_api: true
+services:
+  - mqtt:want
+ports:
+  8765/tcp: 8765
+ports_description:
+  8765/tcp: "Playlists for TVs: /playlists.json, /tvs/register, /status"
+options:
+  # M3U — каналы (аддон сам сопоставляет их с EPG). Источники фильмов — раздел «Плагины» на странице аддона;
+  # старые строки <тип>::[параметры]<url> переносятся туда сами при первом запуске
+  playlists:
+    - name: "Телевидение"
+      url: "http://example.com/playlists/uplist/ВАШ_ТОКЕН/playlist.m3u8"
+  epg_urls:
+    - "https://epg.it999.ru/epg.xml.gz"
+  past_hours: 3
+  future_hours: 36
+  refresh_hours: 6
+  manual_map: []
+  mqtt_ws_port: 1884
+  # язык страницы аддона и ответов для голоса/чата; auto — язык Home Assistant
+  language: auto
+  # ключ TMDB (themoviedb.org, «API Key (v3 auth)») — рейтинги и жанры фильмов; пусто — без них
+  tmdb_key: ""
+  kinopoisk_key: ""
+schema:
+  playlists:
+    - name: str
+      url: str
+  epg_urls:
+    - url
+  past_hours: int(0,48)
+  future_hours: int(6,168)
+  refresh_hours: int(1,48)
+  manual_map:
+    - str
+  # WebSocket-порт Mosquitto — его адрес и логин аддон выдаёт телевизору при регистрации
+  mqtt_ws_port: port
+  language: list(auto|en|ru|uk|de)
+  tmdb_key: str?
+  kinopoisk_key: str?

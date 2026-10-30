@@ -1,0 +1,17 @@
+#EXTM3U
+# Пример плейлиста в том формате, что отдаёт портал провайдера (Stalker/Ministra):
+#   - группа идёт отдельной строкой #EXTGRP после #EXTINF, а не атрибутом group-title;
+#   - tvg-id и tvg-logo отсутствуют — каналы сопоставляются с EPG по имени;
+#   - tvg-rec="N" — сколько дней архива заявлено (0/1/3/7).
+# Настоящий плейлист с личным токеном в репозитории не хранится: ссылка задаётся
+# в опциях аддона epg_builder (см. docs/addon-iptv.md).
+
+#EXTINF:-1 tvg-rec="7",Первый канал HD
+#EXTGRP:HD
+http://example.com/iptv/ТОКЕН/101/index.m3u8
+#EXTINF:-1 tvg-rec="3",Новости 24
+#EXTGRP:новости
+http://example.com/iptv/ТОКЕН/102/index.m3u8
+#EXTINF:-1 tvg-rec="0",Кино Плюс
+#EXTGRP:кино
+http://example.com/iptv/ТОКЕН/103/index.m3u8

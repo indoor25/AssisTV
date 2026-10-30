@@ -1,0 +1,10 @@
+# Пример вкладки панели Home Assistant с карточкой плеера на весь экран (тип отображения «Панель»).
+# ✏️ панели → ⋮ → «Редактор YAML» → добавить в список views. tv_id — со страницы IPTV в боковом меню HA.
+# Ресурс панели (Настройки → Панели → ⋮ → Ресурсы) аддон добавляет сам: /local/tizen-iptv/loader.js (модуль).
+title: TV
+path: tv
+icon: mdi:television-classic
+panel: true
+cards:
+  - type: custom:tizen-iptv-card
+    tv_id: qe55qn85c_xxxx

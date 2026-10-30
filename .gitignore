@@ -1,0 +1,40 @@
+# Личное — в репозиторий не попадает.
+# Внимание: git не понимает комментарии в конце строки, только на отдельной строке.
+
+# реальные пароли, токены и ключи (см. README)
+private/
+# настоящий плейлист провайдера с личным токеном
+sample-playlist.m3u8
+secrets.yaml
+ha-config/secrets.yaml
+
+# Сборка Tizen и подписи
+.buildResult/
+*.wgt
+.sign/
+.manifest.tmp
+author-signature.xml
+signature*.xml
+
+# Tizen Studio / Eclipse
+.project
+.tproject
+.settings/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Мусор ОС и редакторов
+Thumbs.db
+desktop.ini
+.DS_Store
+*.swp
+*~
+
+.claude/
+
+# заметки для ИИ-помощников — личная история разработки (Claude Code читает CLAUDE.local.md сам)
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md

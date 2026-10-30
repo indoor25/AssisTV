@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>AssisTV</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Video surface: AVPlay attaches to this object element -->
+    <object id="av-player" type="application/avplayer"></object>
+
+    <div id="clock">00:00</div>
+
+    <div id="channel-osd" class="hidden">
+        <img id="osd-logo" src="" alt="">
+        <div id="osd-name"></div>
+        <div id="osd-epg-now"></div>
+        <div id="osd-video"></div>
+    </div>
+
+    <div id="number-osd" class="hidden"></div>
+    <div id="play-state" class="hidden"></div>
+    <div id="epg-status" class="hidden"></div>
+
+    <!-- Ожидание картинки: открытие канала, пустой буфер или зависший поток при обрыве связи -->
+    <div id="buffering" class="hidden">
+        <div class="spinner"></div>
+        <div id="buffering-title"></div>
+        <div id="buffering-percent">0%</div>
+        <div class="buffering-bar"><div id="buffering-bar-fill"></div></div>
+        <div id="buffering-wait"></div>
+    </div>
+
+    <div id="channel-list" class="hidden"></div>
+    <div id="channel-epg" class="hidden"></div>
+    <div id="side-menu" class="hidden"></div>
+    <div id="player-bar" class="hidden"></div>
+    <div id="home-view" class="hidden"></div>
+    <div id="vod-view" class="hidden"></div>
+
+    <!-- Фильм/серия видеопортала: название, позиция и полоса (◄► перемотка, ▲ показать) -->
+    <div id="vod-osd" class="hidden">
+        <div class="vod-osd-row"><div id="vod-osd-title"></div><div id="vod-osd-time"></div></div>
+        <div class="vod-osd-bar">
+            <div id="vod-osd-fill"></div>
+            <div id="vod-osd-span" class="hidden"></div>
+            <div id="vod-osd-thumb"></div>
+            <div id="vod-osd-bubble" class="hidden"></div>
+        </div>
+        <div class="vod-osd-hint" id="vod-osd-hint"></div>
+    </div>
+
+    <div id="settings-view" class="hidden"></div>
+    <div id="playlist-dialog" class="hidden"></div>
+    <div id="exit-dialog" class="hidden"></div>
+    <!-- Код привязки к аддону HA (js/pairing-ui.js) -->
+    <div id="pairing-view" class="hidden"></div>
+
+    <!-- Всплывающие сообщения (например, «Настройки сохранены») — логов на TV нет -->
+    <div id="toast" class="hidden"></div>
+    <!-- Подборка фильмов от ассистента: полупрозрачная страница поверх экрана (js/suggest-ui.js) -->
+    <div id="suggest-view" class="hidden"></div>
+    <div id="notice" class="hidden"><div id="notice-text"></div><div id="notice-options" class="hidden"></div><div id="notice-hint"></div></div>
+    <div id="sleep-countdown" class="hidden"></div>
+
+    <!-- Нет консоли на TV — если старт упал, ошибка должна быть видна прямо на экране -->
+    <div id="fatal-error" class="hidden"></div>
+
+    <!-- Подсказка по кнопкам: на TV больше негде показать, какие клавиши что открывают -->
+    <div id="key-hints"></div>
+
+    <!-- Bundle libs locally for TV — avoid relying on runtime CDN fetches -->
+    <script src="libs/mqtt.min.js"></script>
+    <!-- m3u-parser.js / xmltv-parser.js на TV больше не подключаются: плейлист и EPG разбирает аддон
+         (он берёт эти файлы из js/ при деплое) -->
+    <!-- Переводы: сначала модуль, потом словари (lang/README.md — как добавить язык) -->
+    <script src="js/i18n.js"></script>
+    <script src="lang/ru.js"></script>
+    <script src="lang/en.js"></script>
+    <script src="lang/uk.js"></script>
+    <script src="lang/de.js"></script>
+    <script src="js/channel-name.js"></script>
+    <script src="js/channel-match.js"></script>
+    <script src="js/app-clock.js"></script>
+    <script src="js/addon-client.js"></script>
+    <script src="js/parental.js"></script>
+    <script src="js/channel-store.js"></script>
+    <script src="js/channel-list-ui.js"></script>
+    <script src="js/channel-epg-ui.js"></script>
+    <script src="js/side-menu-ui.js"></script>
+    <script src="js/player-bar-ui.js"></script>
+    <script src="js/info-panel-ui.js"></script>
+    <script src="js/pin-dialog-ui.js"></script>
+    <script src="js/home-ui.js"></script>
+    <script src="js/exit-dialog-ui.js"></script>
+    <script src="js/pairing-ui.js"></script>
+    <script src="js/playlist-dialog-ui.js"></script>
+    <!-- сами источники фильмов (плагины) не в пакете: их код телевизор берёт у аддона, см. AddonClient.loadVodSources -->
+    <script src="js/vod-sources.js"></script>
+    <script src="js/vod-client.js"></script>
+    <script src="js/vod-history.js"></script>
+    <script src="js/vod-favorites.js"></script>
+    <script src="js/vod-ui.js"></script>
+    <script src="js/reviews-ui.js"></script>
+    <script src="js/suggest-ui.js"></script>
+    <script src="js/settings-ui.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/tv-audio.js"></script>
+    <script src="js/sleep-timer.js"></script>
+    <script src="js/mqtt-bridge.js"></script>
+    <script src="js/remote-control.js"></script>
+    <script src="js/local-defaults.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+# Пока голосовой сателлит слушает команду, звук телевизора выключен: иначе микрофон
+# записывает телевизор (спорт с комментатором — фраза не кончается до 15 с, и распознаётся эфир).
+# Звук возвращается, как только сателлит перестал слушать (processing), и только если его
+# выключила эта автоматизация — «выключи звук» голосом выполняется уже после возврата и остаётся.
+#
+# Нужен помощник input_boolean «IPTV приглушён голосом» (input_boolean.iptv_priglushen_golosom).
+# В HA: Настройки → Автоматизации → ⋮ → «Редактировать в YAML», вставить элемент списка ниже.
+#
+# ВАЖНО: идентификаторы ниже — примеры, замените на свои:
+#   assist_satellite.ВАШ_САТЕЛЛИТ   — Настройки → Устройства → ваш голосовой сателлит;
+#   ВАШ_TV_ID                        — id телевизора со страницы аддона IPTV (он же в топиках iptv/<tv_id>/…)
+#                                      и в имени выключателя switch.iptv_<tv_id>_mute.
+
+- id: iptv_duck_tv1
+  alias: "IPTV: глушить телевизор, пока слушает сателлит"
+  mode: queued
+  triggers:
+    - trigger: state
+      entity_id: assist_satellite.ВАШ_САТЕЛЛИТ
+      to: listening
+      id: duck
+    - trigger: state
+      entity_id: assist_satellite.ВАШ_САТЕЛЛИТ
+      from: listening
+      id: restore
+  actions:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: duck
+            - condition: state
+              entity_id: switch.iptv_ВАШ_TV_ID_mute
+              state: "off"
+          sequence:
+            - action: mqtt.publish
+              data:
+                topic: iptv/ВАШ_TV_ID/command
+                payload: mute
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.iptv_priglushen_golosom
+        - conditions:
+            - condition: trigger
+              id: restore
+            - condition: state
+              entity_id: input_boolean.iptv_priglushen_golosom
+              state: "on"
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id: input_boolean.iptv_priglushen_golosom
+            - action: mqtt.publish
+              data:
+                topic: iptv/ВАШ_TV_ID/command
+                payload: unmute

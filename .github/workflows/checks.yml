@@ -1,0 +1,35 @@
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Add-on dependencies
+        working-directory: ha-addon/epg_builder
+        run: npm install --no-audit --no-fund
+      - name: Channel search
+        run: node tools/channel-match-test.js
+      - name: TV guide
+        run: node tools/guide-test.js
+      - name: Movie sources and plugins
+        run: node tools/vod-sources-test.js
+      - name: Translations
+        run: node tools/i18n-check.js
+      - name: Shared files are in sync with the add-on
+        run: |
+          for f in channel-name.js m3u-parser.js xmltv-parser.js channel-match.js vod-sources.js i18n.js; do
+            cmp js/$f ha-addon/epg_builder/shared/$f
+          done
+          for f in lang/*.js; do cmp $f ha-addon/epg_builder/shared/$f; done

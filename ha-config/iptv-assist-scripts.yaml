@@ -1,0 +1,647 @@
+# Home Assistant scripts for Assist (Gemini or any other LLM agent): control the IPTV player on the TVs.
+# How to install — docs/assist.md. Put them into scripts.yaml and expose them to Assist
+# (Settings → Voice assistants → Expose), all except iptv_zapros.
+#
+# Descriptions are in English on purpose: the AI understands them whatever language the user speaks and
+# answers in the user's language. The add-on's own answers (message) come in the add-on language
+# (add-on option "language", auto — the Home Assistant language).
+#
+# Script ids of the scripts exposed to Assist are plain English on purpose: the id becomes the tool name,
+# and with transliterated ids (iptv_upravlenie) Gemini kept "correcting" the tail into Cyrillic
+# (iptv_upravление) — the tool was not found and it fell back to random devices.
+#
+# All scripts go through the IPTV add-on: they publish JSON to MQTT iptv/request and wait for the answer in
+# sensor.iptv_otvet (created by add-on 2.7.0+, its attributes are the whole answer). The script returns a
+# dictionary with a message field for the AI to retell. error = ambiguous_tv / no_tv_on — ask which TV (list in tvs).
+
+iptv_zapros:
+  alias: "IPTV: add-on request (internal)"
+  description: Internal — called by the other IPTV scripts. Do not expose it to Assist.
+  mode: parallel
+  max: 20
+  fields:
+    request:
+      name: Request
+      description: "JSON request to the add-on: {action, query, tv, command, value, from_start}"
+      required: true
+      selector:
+        object: {}
+  sequence:
+    - variables:
+        rid: "{{ context.id }}"
+    - action: mqtt.publish
+      data:
+        topic: iptv/request
+        payload: "{{ dict(request, request_id=rid) | to_json }}"
+    # turning the TV on and starting the player takes up to ~70 s
+    - wait_template: "{{ state_attr('sensor.iptv_otvet', 'request_id') == rid }}"
+      timeout: 100
+    - variables:
+        result: >-
+          {% if wait.completed %}
+            {% set a = states.sensor.iptv_otvet.attributes %}
+            {{ dict(a.items() | rejectattr(0, 'in', ['friendly_name', 'icon', 'request_id']) | list) }}
+          {% else %}
+            {{ {'ok': false, 'error': 'no_answer', 'message': 'The IPTV add-on did not answer. Check that it is running.'} }}
+          {% endif %}
+    - stop: ""
+      response_variable: result
+
+iptv_tv_channel:
+  alias: "IPTV: switch TV channel"
+  description: >-
+    Switches a TV channel on the TV (IPTV player on a Samsung TV). Pass the channel name exactly as the user
+    said it — the player fixes speech recognition mistakes itself ("first channel", "discovery").
+    If the TV is off, the script turns it on and starts the player (up to a minute).
+    Set from_start to true when the user wants the current programme from its beginning ("turn on channel X
+    from the start") — it is played from the channel archive, if the channel has one.
+    Result: message — retell it to the user in their language. If error = ambiguous_tv or no_tv_on, ask the
+    user which TV (options in tvs) and call again with tv. error = not_found — no such channel, you may
+    suggest alternatives.
+  icon: mdi:television-play
+  mode: parallel
+  fields:
+    channel:
+      name: Channel
+      description: TV channel name as the user said it.
+      required: true
+      example: BBC One
+      selector:
+        text: {}
+    tv:
+      name: TV
+      description: >-
+        TV name or room ("bedroom", "living room"). Leave empty if the user did not say — then the channel
+        is switched on the only TV where the player runs. If the command came from a voice device in a room,
+        you may pass that room.
+      example: bedroom
+      selector:
+        text: {}
+    from_start:
+      name: From the beginning
+      description: true — play the programme that is on now from its beginning (channel archive).
+      default: false
+      selector:
+        boolean: {}
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: channel
+          query: "{{ channel }}"
+          tv: "{{ tv | default('') }}"
+          from_start: "{{ from_start | default(false) }}"
+      response_variable: result
+    - stop: ""
+      response_variable: result
+
+iptv_play_movie:
+  alias: "IPTV: play a movie or series"
+  description: >-
+    Finds a movie or series and plays it on the TV; all configured movie sources are searched one after
+    another. A series continues from the last watched episode and position. query — the title, may include a
+    year or season ("game of thrones season 3"). If the user describes the plot or names actors instead of a
+    title, work out the title from your own knowledge first and pass the title. If the user names a quality
+    ("in 4K", "in full HD", "in the best quality"), pass it in quality: the exact quality is played if it
+    exists, otherwise the nearest one — the result says which (quality, quality_wanted, quality_match) and
+    message already tells it; when quality_match is false always tell the user which quality was found and
+    played. If there is no exact match, returns error = not_found and similar titles in alternatives —
+    name at most three of them in one short sentence and ask which one, the answer is read out loud.
+    ambiguous_tv / no_tv_on — ask which TV. After a selection was shown on the TV ("IPTV: suggest movies on
+    the TV") and the user picked one by its number, pass choice = that number and leave query empty.
+  icon: mdi:movie-open-play
+  mode: parallel
+  fields:
+    query:
+      name: Title
+      description: Movie or series title as the user said it. Empty only together with choice.
+      example: The Matrix
+      selector:
+        text: {}
+    choice:
+      name: Choice
+      description: Number of the movie in the selection shown on the TV. Leave empty otherwise.
+      selector:
+        number:
+          min: 1
+          max: 20
+    tv:
+      name: TV
+      description: TV name or room. Leave empty if the user did not say.
+      selector:
+        text: {}
+    from_start:
+      name: From the beginning
+      description: true — watch from the beginning instead of where it stopped.
+      default: false
+      selector:
+        boolean: {}
+    quality:
+      name: Quality
+      description: >-
+        Only if the user asked for a quality: 4K, 1440p, 1080p, 720p, 480p, HDR, best or worst.
+        Leave empty otherwise.
+      example: 4K
+      selector:
+        text: {}
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: vod_play
+          query: "{{ query | default('') }}"
+          choice: "{{ choice | default('') }}"
+          quality: "{{ quality | default('') }}"
+          tv: "{{ tv | default('') }}"
+          from_start: "{{ from_start | default(false) }}"
+      response_variable: result
+    - stop: ""
+      response_variable: result
+
+iptv_find_movie:
+  alias: "IPTV: find a movie"
+  description: >-
+    Searches movies and series in all configured movie sources, one after another (plays nothing, no TV
+    needed). Use it when the user asks whether a movie is available or asks to find or suggest something.
+    If the user describes the plot, a scene or the actors instead of a title ("the film where a ferry blows
+    up and Denzel Washington investigates it by looking into the past"), first work out the title from your
+    own knowledge, say which film it looks like, then search by that title to tell whether it is available.
+    Result: results — at most three matches
+    {title, year, kind: movie|series, season}. The answer is read out loud, so keep it to one short sentence:
+    name the titles and ask which one, never read a long list and never repeat years unless they are needed to
+    tell two titles apart. To play one, use the script "IPTV: play a movie or series".
+  icon: mdi:movie-search
+  mode: parallel
+  fields:
+    query:
+      name: What to search
+      description: Movie or series title.
+      required: true
+      selector:
+        text: {}
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: vod_search
+          query: "{{ query }}"
+          limit: 3
+      response_variable: result
+    - stop: ""
+      response_variable: result
+
+iptv_movie_info:
+  alias: "IPTV: movie rating and description"
+  description: >-
+    Rating and description of a movie or series from Kinopoisk and TMDB (plays nothing, no TV needed, the
+    movie does not have to be in the portal). Use it for "what is the rating of …", "what is … about",
+    "is … worth watching", "tell me about the film …". Pass the title; if the user describes the plot instead,
+    work out the title from your own knowledge first. Result: title, year, kinopoisk_rating, tmdb_rating
+    (out of 10), genres, description, available — true if the movie can be played with
+    "IPTV: play a movie or series". The answer is read out loud: say the rating and retell the description
+    in one or two short sentences, do not read it whole. error = not_found — the catalogues do not know it.
+  icon: mdi:star-circle-outline
+  mode: parallel
+  fields:
+    query:
+      name: Title
+      description: Movie or series title, may include the year.
+      required: true
+      example: The Matrix
+      selector:
+        text: {}
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: vod_info
+          query: "{{ query }}"
+      response_variable: result
+    - stop: ""
+      response_variable: result
+
+iptv_favorite_movies_list:
+  alias: "IPTV: list favourite movies"
+  description: >-
+    Returns the titles of the movies and series in the user's favourites of the IPTV player (titles — a list,
+    newest first; count — how many), plus watched — what was already watched on the TVs, and
+    suggested_recently — what was offered in the last selections. Use it when the user asks what is in the favourites, and always as the
+    first step when the user asks to suggest or find something to watch based on the favourites — then pick
+    the films yourself and call the script "IPTV: suggest movies on the TV".
+  icon: mdi:heart-multiple-outline
+  mode: parallel
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: favorites_titles
+      response_variable: result
+    - stop: ""
+      response_variable: result
+
+iptv_suggest_movies:
+  alias: "IPTV: suggest movies on the TV"
+  description: >-
+    Shows a selection of movies on the TV screen: a page with posters, ratings and descriptions over the
+    picture, where the user picks one with the remote or by voice. Use it for "find me movies based on my
+    favourites", "suggest something to watch", "what else is like …". First get the favourites with "IPTV:
+    list favourite movies", then choose 12–15 movies or series from your own knowledge that fit the user's
+    taste, are not in the favourites and that the user most likely has not seen, and pass them in titles —
+    separated by semicolons, each with its year, in the language the user speaks. Only the titles available
+    in the movie sources are shown, the page scrolls down; the result lists them in options (choice — the number on the
+    screen) and not_available lists the ones that were not found. Say in one short sentence that the selection
+    is on the screen, name at most three titles and ask which one to play. When the user answers, call "IPTV:
+    play a movie or series" with choice = that number and an empty query. error = none_available — none of
+    the titles is in the sources: pick other, better known titles and call again once. Movies that were
+    already watched are never shown. If the user asks for more options ("more", "other ones", "something
+    else"), call again with more = true and different titles — do not repeat the ones from watched and
+    suggested_recently; with more = true everything shown recently is filtered out as well.
+  icon: mdi:movie-star-outline
+  mode: parallel
+  fields:
+    titles:
+      name: Titles
+      description: Movie or series titles with years, separated by semicolons.
+      required: true
+      example: "Prisoners (2013); Shutter Island (2010); Gone Girl (2014)"
+      selector:
+        text: {}
+    more:
+      name: More options
+      description: true — the user asked for more options after a selection; already shown titles are skipped.
+      default: false
+      selector:
+        boolean: {}
+    tv:
+      name: TV
+      description: TV name or room. Leave empty if the user did not say.
+      selector:
+        text: {}
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: vod_recommend
+          titles: "{{ titles }}"
+          more: "{{ more | default(false) }}"
+          tv: "{{ tv | default('') }}"
+      response_variable: result
+    - stop: ""
+      response_variable: result
+
+iptv_favorite_movie:
+  alias: "IPTV: add a movie to favourites"
+  description: >-
+    Adds a movie or series to the favourites of the IPTV player. Use it for "add this to favourites", "add the
+    film … to favourites". Leave query empty to add the movie that is playing on the TV right now (tv — which TV,
+    only if the user said it). With query the title is searched in all movie sources and added. If several
+    titles fit, the result is error = ambiguous with options (choice — number, title, year); the list is also
+    shown on the TV screen — ask the user which one in one short sentence, naming at most three options, then
+    call again with choice = that number (query may stay empty). Result: message — retell it. error = no_movie —
+    nothing is playing, ask for the title; not_found — no such movie.
+  icon: mdi:heart-plus-outline
+  mode: parallel
+  fields:
+    query:
+      name: Title
+      description: Movie or series title. Leave empty for the movie that is playing now.
+      example: The Matrix
+      selector:
+        text: {}
+    choice:
+      name: Choice
+      description: Number of the option the user picked after an ambiguous answer.
+      selector:
+        number:
+          min: 1
+          max: 5
+    tv:
+      name: TV
+      description: TV name or room. Leave empty if the user did not say.
+      selector:
+        text: {}
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: favorite_add
+          query: "{{ query | default('') }}"
+          choice: "{{ choice | default('') }}"
+          tv: "{{ tv | default('') }}"
+      response_variable: result
+    - stop: ""
+      response_variable: result
+
+iptv_player_control:
+  alias: "IPTV: player control"
+  description: >-
+    Controls the IPTV player on the TV. command: pause — pause; play — resume; play_pause — toggle pause;
+    stop — stop; next / prev — next / previous channel (or episode during a series); volume_up /
+    volume_down — louder / quieter (value — by how much, default 1, "a bit louder" — 3, "much louder" — 10);
+    volume — set volume to exactly value (0–100); mute / unmute — sound off / on; open — turn the TV on and
+    open the player; power_off — turn the TV off now.
+    from_start — play what is on now from its beginning ("from the start", "start over": the current programme
+    from the channel archive, or the movie from zero); live — leave the archive and go back to live TV;
+    seek — rewind or fast-forward a movie or an archive recording by value seconds (negative — back);
+    sleep — sleep timer: turn the TV off in value minutes ("turn the TV off in half an hour" — 30), value 0
+    cancels the timer. ambiguous_tv / no_tv_on — ask which TV.
+  icon: mdi:remote-tv
+  mode: parallel
+  fields:
+    command:
+      name: Command
+      required: true
+      selector:
+        select:
+          options:
+            - pause
+            - play
+            - play_pause
+            - stop
+            - next
+            - prev
+            - volume_up
+            - volume_down
+            - volume
+            - mute
+            - unmute
+            - open
+            - power_off
+            - from_start
+            - live
+            - seek
+            - sleep
+    value:
+      name: Value
+      description: >-
+        For volume — volume 0–100, for volume_up/volume_down — the step, for sleep — minutes (0 cancels),
+        for seek — seconds (negative — back).
+      selector:
+        number:
+          min: -7200
+          max: 7200
+    tv:
+      name: TV
+      description: TV name or room. Leave empty if the user did not say.
+      selector:
+        text: {}
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: command
+          command: "{{ command }}"
+          value: "{{ value | default('') }}"
+          tv: "{{ tv | default('') }}"
+      response_variable: result
+    - stop: ""
+      response_variable: result
+
+iptv_now_playing:
+  alias: "IPTV: what is on now"
+  description: >-
+    What the IPTV player shows now: channel, programme (and until when), movie, pause, volume.
+    Without tv — all TVs where the player runs. Result: message — a ready sentence, tvs — details.
+  icon: mdi:television-guide
+  mode: parallel
+  fields:
+    tv:
+      name: TV
+      description: TV name or room. Leave empty if the user did not say.
+      selector:
+        text: {}
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: status
+          tv: "{{ tv | default('') }}"
+      response_variable: result
+    - stop: ""
+      response_variable: result
+
+iptv_tv_guide:
+  alias: "IPTV: TV guide"
+  description: >-
+    TV guide of a channel for the next 24 hours (no TV needed, nothing is switched). Use it for "what is on
+    channel X", "what is next", "when is the news / a show / a film on channel X". Pass the channel name as the
+    user said it; leave channel empty to get the guide of the channel playing now. Result: now — the current
+    programme, programmes — list of {date, start, stop, title} in local time, today and time — the current
+    date and time. Find what the user asked about in programmes yourself (news may be called by its own name)
+    and answer in one short sentence with the time — never read the whole list. error = not_found — no such
+    channel (see alternatives); no_epg — there is no guide for this channel.
+  icon: mdi:television-guide
+  mode: parallel
+  fields:
+    channel:
+      name: Channel
+      description: TV channel name as the user said it. Empty — the channel that is playing now.
+      example: BBC One
+      selector:
+        text: {}
+    tv:
+      name: TV
+      description: Only when channel is empty — TV name or room whose current channel is meant.
+      selector:
+        text: {}
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: guide
+          query: "{{ channel | default('') }}"
+          tv: "{{ tv | default('') }}"
+      response_variable: result
+    - stop: ""
+      response_variable: result
+
+iptv_find_programme:
+  alias: "IPTV: find a programme in the TV guide"
+  description: >-
+    Searches the TV guide of ALL channels by programme title for the coming days (no TV needed, nothing is
+    switched). Use it for "when is football on today", "is Ivan Vasilievich on TV", "what film is on now" style
+    questions where the channel is unknown. query — words from the title ("football", "news", a film name);
+    use one or two key words, the search requires every word. Optional channel limits the search to one
+    channel, day limits it to one day. Result: programmes — list of {title, channel, date, start, stop, live,
+    ref} in local time, sorted by time, live = true means it is on right now; total — how many were found;
+    today and time — the current date and time. The answer is read out loud: name at most three programmes in
+    one short sentence with the time and the channel, and say how many more there are. To be reminded about a
+    programme use the script "IPTV: programme reminder" with its ref. To watch one that is on now use
+    "IPTV: switch TV channel" (from_start = true to see it from the beginning). error = not_found — nothing found.
+  icon: mdi:television-guide
+  mode: parallel
+  fields:
+    query:
+      name: What to search
+      description: Words from the programme title, as the user said them.
+      required: true
+      example: football
+      selector:
+        text: {}
+    channel:
+      name: Channel
+      description: Only this channel. Leave empty to search all channels.
+      selector:
+        text: {}
+    day:
+      name: Day
+      description: "today, tomorrow or a date YYYY-MM-DD. Leave empty for all coming days."
+      example: today
+      selector:
+        text: {}
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: guide_search
+          query: "{{ query }}"
+          channel: "{{ channel | default('') }}"
+          day: "{{ day | default('') }}"
+      response_variable: result
+    - stop: ""
+      response_variable: result
+
+iptv_programme_reminder:
+  alias: "IPTV: programme reminder"
+  description: >-
+    Reminder about a TV programme: 5 minutes before it starts a notice appears on the TV and the assistant
+    says it out loud. Use it for "remind me when the football starts", "remind me about the film".
+    action: add — set a reminder: pass ref from "IPTV: find a programme in the TV guide" if you already searched,
+    otherwise pass query (and optionally channel, day) — the nearest programme that has not started yet is
+    taken; list — what reminders are set; cancel — remove reminders matching query (empty query — all).
+    Result: message — retell it to the user; programme — what exactly the reminder is for (say its time and
+    channel so the user can correct you); error = already_started — it is on right now, offer to switch to it;
+    not_found — nothing found.
+  icon: mdi:bell-ring-outline
+  mode: parallel
+  fields:
+    action:
+      name: Action
+      required: true
+      default: add
+      selector:
+        select:
+          options:
+            - add
+            - list
+            - cancel
+    query:
+      name: Programme
+      description: Words from the programme title.
+      example: football
+      selector:
+        text: {}
+    ref:
+      name: Reference
+      description: ref of the programme from the search result (more exact than query).
+      selector:
+        text: {}
+    channel:
+      name: Channel
+      description: Only this channel. Leave empty for any channel.
+      selector:
+        text: {}
+    day:
+      name: Day
+      description: "today, tomorrow or a date YYYY-MM-DD. Leave empty for the nearest one."
+      selector:
+        text: {}
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: "{{ {'list': 'reminders', 'cancel': 'remind_cancel'}.get(action | default('add'), 'remind') }}"
+          query: "{{ query | default('') }}"
+          ref: "{{ ref | default('') }}"
+          channel: "{{ channel | default('') }}"
+          day: "{{ day | default('') }}"
+      response_variable: result
+    - stop: ""
+      response_variable: result
+
+iptv_tonight:
+  alias: "IPTV: what to watch tonight"
+  description: >-
+    What is on TV tonight (or on another day and hours) on the channels this household actually watches. Use it
+    for "what should I watch tonight", "anything good on TV today", "suggest something" when neither a channel
+    nor a programme is named. No TV needed, nothing is switched. Result: programmes — list of {title, channel,
+    start, stop, minutes, live, watched_before, ref} in local time, sorted by time; live = true — already on;
+    watched_before = true — this programme has been watched here before; often_watched — what is watched most
+    (the family's taste); channels — the channels considered; today and time — the current date and time. Pick
+    the two or three most interesting options yourself (films and things similar to often_watched first, not
+    yet started rather than already running) and name them in one short sentence with the time and the channel
+    — the answer is read out loud, do not read the whole list. To watch one use "IPTV: switch TV channel"
+    (from_start = true to see it from the beginning), to be reminded use "IPTV: programme reminder" with its
+    ref. error = nothing — nothing is on at that time.
+  icon: mdi:sofa
+  mode: parallel
+  fields:
+    day:
+      name: Day
+      description: "today, tomorrow or a date YYYY-MM-DD. Leave empty for today."
+      example: today
+      selector:
+        text: {}
+    from:
+      name: From
+      description: "Start hour or time, e.g. 19 or 19:30. Leave empty for 18:00 (but not earlier than now)."
+      example: "19"
+      selector:
+        text: {}
+    to:
+      name: Until
+      description: "End hour or time, e.g. 23. Leave empty for midnight."
+      example: "23"
+      selector:
+        text: {}
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: tonight
+          day: "{{ day | default('') }}"
+          from: "{{ from | default('') }}"
+          to: "{{ to | default('') }}"
+      response_variable: result
+    - stop: ""
+      response_variable: result
+
+iptv_move:
+  alias: "IPTV: move playback to another TV"
+  description: >-
+    Continues what is playing on one TV (a channel, an archive recording, a film or an episode) on another TV
+    from the same spot. Use it for "move it to the bedroom", "continue in the living room", "I want to finish
+    it in the bedroom". to — where to (a room or a TV name); may be omitted when there are exactly two TVs.
+    from — where from; omit it when only one TV is playing. The TV it was moved from is turned off; keep = true
+    leaves it on ("play this in the bedroom too"). Result: message — what to say. error = nothing_playing —
+    nothing is playing anywhere; ambiguous_tv / no_target — ask which TV (the list is in tvs).
+  icon: mdi:television-play
+  mode: single
+  fields:
+    to:
+      name: To
+      description: The room or the name of the TV to continue on.
+      example: bedroom
+      selector:
+        text: {}
+    from:
+      name: From
+      description: The room or the name of the TV to move from. Leave empty when only one TV is playing.
+      selector:
+        text: {}
+    keep:
+      name: Keep the first TV on
+      description: true — the first TV keeps playing.
+      selector:
+        boolean: {}
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: move
+          to: "{{ to | default('') }}"
+          from: "{{ from | default('') }}"
+          keep: "{{ keep | default(false) }}"
+      response_variable: result
+    - stop: ""
+      response_variable: result

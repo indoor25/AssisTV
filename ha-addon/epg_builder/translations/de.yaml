@@ -1,0 +1,31 @@
+configuration:
+  playlists:
+    name: Playlists
+    description: "M3U-Playlists (Sender): Name und URL. Film- und Serienquellen werden auf der Add-on-Seite im Bereich „Plugins“ eingerichtet."
+  epg_urls:
+    name: Quellen des Programmführers (XMLTV)
+    description: Ein oder mehrere Links auf .xml oder .xml.gz. Bei Konflikten gewinnt der obere.
+  past_hours:
+    name: Stunden zurück
+    description: Wie viele Stunden vergangener Sendungen in der Playlist für den Fernseher bleiben.
+  future_hours:
+    name: Stunden voraus
+    description: Wie viele Stunden im Voraus das Programm bereitsteht.
+  refresh_hours:
+    name: Neu erstellen alle (Stunden)
+    description: Wie oft Playlists und Programmführer neu heruntergeladen werden.
+  manual_map:
+    name: Manuelle Senderzuordnung
+    description: "Zeilen wie: Name in der Playlist = EPG-ID oder EPG-Name. Einfacher auf der Add-on-Seite (+ Sender zuordnen)."
+  mqtt_ws_port:
+    name: WebSocket-Port von Mosquitto
+    description: Diesen Port teilt das Add-on den Fernsehern mit (der Player verbindet sich per WebSocket mit MQTT).
+  language:
+    name: Sprache
+    description: Sprache der Add-on-Seite und der Antworten für Sprache und Chat (Assist). auto — Sprache von Home Assistant.
+  tmdb_key:
+    name: TMDB-Schlüssel
+    description: "Bewertungen, Genres und Beschreibungen von Filmen über themoviedb.org. Der Schlüssel ist kostenlos: auf der Website Einstellungen → API → API Key (v3 auth). Leer — keine Bewertungen."
+  kinopoisk_key:
+    name: Kinopoisk-Schlüssel
+    description: "Kinopoisk-Bewertung und russischsprachige Zuschauerrezensionen. Kostenloser Schlüssel auf kinopoiskapiunofficial.tech (inoffizielle API). Leer — keine Rezensionen, Bewertungen nur von TMDB."

@@ -1,0 +1,35 @@
+name: Bug report / Ошибка
+description: Something does not work as described / Что-то работает не так, как описано
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security problems — not here, see SECURITY.md. Уязвимости — не сюда, см. SECURITY.md.
+        Please remove addresses, tokens and playlist links from logs. Уберите из журналов адреса, токены и ссылки на плейлисты.
+  - type: input
+    id: versions
+    attributes:
+      label: Versions / Версии
+      description: Player (TV Settings → This TV) and add-on (HA → Settings → Apps → AssisTV)
+      placeholder: player 1.4.0, add-on 2.21.0, Home Assistant 2026.10
+    validations:
+      required: true
+  - type: input
+    id: tv
+    attributes:
+      label: TV model / Модель TV
+      placeholder: QE55QN85C
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened / Что случилось
+      description: Steps, what you expected and what you saw / Шаги, что ожидали и что получилось
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Add-on log / Журнал аддона
+      description: HA → Settings → Apps → AssisTV → Log
+      render: text

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets"
+        xmlns:tizen="http://tizen.org/ns/widgets"
+        id="https://indoor25.github.io/AssisTV"
+        version="1.4.0"
+        viewmodes="maximized">
+    <tizen:application id="TzIptvPl01.IPTVTizen" package="TzIptvPl01" required_version="6.0"/>
+    <name>AssisTV</name>
+    <icon src="icon.png"/>
+    <content src="index.html"/>
+
+    <!-- Плейлист/EPG/MQTT — все на чужих доменах; без этого Tizen блокирует fetch() на них -->
+    <access origin="*" subdomains="true"/>
+
+    <!-- AVPlay / network / remote keys -->
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+    <tizen:privilege name="http://developer.samsung.com/privilege/avplay"/>
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+    <tizen:privilege name="http://tizen.org/privilege/network.get"/>
+    <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
+    <!-- громкость/mute TV по командам из Home Assistant (js/tv-audio.js) -->
+    <tizen:privilege name="http://tizen.org/privilege/tv.audio"/>
+    <!-- DUID и модель TV — идентификатор телевизора при регистрации в аддоне HA (js/addon-client.js) -->
+    <tizen:privilege name="http://developer.samsung.com/privilege/productinfo"/>
+
+    <!-- Remote control keys we need beyond default nav -->
+    <tizen:metadata key="http://samsung.com/tv/metadata/use.remote.control" value="true"/>
+
+    <tizen:setting screen-orientation="landscape"
+                   context-menu="disable"
+                   background-support="disable"
+                   encryption="disable"
+                   install-location="auto"
+                   hwkey-event="enable"/>
+</widget>

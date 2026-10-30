@@ -49,6 +49,9 @@
         'playlists.empty': 'Keine Playlists — sie werden im Home-Assistant-Add-on angelegt (die Add-on-Adresse steht in den Einstellungen)',
         'playlists.kindVod': 'Filme',
         'playlists.kindTv': 'TV',
+        'playlists.open': 'geöffnet',
+        'playlists.failed': 'nicht geladen — Link im Add-on prüfen',
+        'playlists.building': 'wird vorbereitet…',
 
         'home.settings': 'Einstellungen',
         'home.groupLocked': 'Diese Gruppe ist mit einer PIN geschützt',
@@ -138,6 +141,7 @@
         'settings.offsetNone': 'keine',
         'settings.offsetHours': '{h} Std.',
         'settings.save': 'Speichern',
+        'settings.needAddon': 'Geben Sie die Adresse des AssisTV-Add-ons in Home Assistant ein (z. B. 192.168.1.10:8765) und drücken Sie „Speichern“. OK startet die Eingabe.',
         'settings.cancel': 'Abbrechen',
         'settings.thisTv': 'Dieser Fernseher',
         'settings.notWritten': 'Daten wurden nicht gespeichert',

@@ -49,6 +49,9 @@
         'playlists.empty': 'No playlists — add them in the Home Assistant add-on (the add-on address is in Settings)',
         'playlists.kindVod': 'Movies',
         'playlists.kindTv': 'TV',
+        'playlists.open': 'open',
+        'playlists.failed': 'failed to load — check the link in the add-on',
+        'playlists.building': 'being prepared…',
 
         'home.settings': 'Settings',
         'home.groupLocked': 'This group is protected by a PIN',
@@ -138,6 +141,7 @@
         'settings.offsetNone': 'none',
         'settings.offsetHours': '{h} h',
         'settings.save': 'Save',
+        'settings.needAddon': 'Enter the address of the AssisTV add-on in Home Assistant (for example, 192.168.1.10:8765) and press "Save". OK starts typing.',
         'settings.cancel': 'Cancel',
         'settings.thisTv': 'This TV',
         'settings.notWritten': 'data was not written to storage',

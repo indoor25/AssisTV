@@ -177,7 +177,14 @@ function publicPlaylists({ withUrl } = {}) {
     return playlistIndex.map(p => (p.kind === 'vod'
         ? Object.assign({ id: p.id, name: p.name, kind: p.kind, src: (VodSources.parseUrl(p.url) || {}).type || 'portal' },
             withUrl ? { url: p.url } : {})
-        : { id: p.id, name: p.name, kind: p.kind, ready: !!bundles[p.id] }));
+        : Object.assign({ id: p.id, name: p.name, kind: p.kind, ready: !!bundles[p.id] }, playlistFailed(p.id) ? { failed: true } : {})));
+}
+
+/** Плейлист не собрался и прежней сборки нет. Телевизору — только признак: в тексте ошибки бывает ссылка с токеном. */
+function playlistFailed(id) {
+    if (bundles[id]) return false;
+    const st = (status.playlists || []).find(s => s.id === id);
+    return !!(st && st.lastError);
 }
 
 // Последние скачанные M3U и EPG — по ним ручная привязка пересобирает плейлисты без скачивания.
@@ -1231,6 +1238,11 @@ function tvError(found, tvQuery) {
     };
 }
 
+/** ISO-время для страницы: «30 окт., 19:08» на языке аддона; нет или битое — «—». */
+const whenLabel = iso => {
+    const d = new Date(iso || NaN);
+    return isNaN(d) ? '—' : d.toLocaleString(I18n.locale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: process.env.TZ || undefined });
+};
 const hhmm = sec => new Date(sec * 1000).toLocaleTimeString(I18n.locale(), { hour: '2-digit', minute: '2-digit', timeZone: process.env.TZ || undefined });
 
 /** Что играет на телевизоре — одной фразой и полями. */
@@ -2431,7 +2443,7 @@ async function renderPage({ ingress, parentalNote, pluginNote } = {}) {
       <section class="tv">
         <h2>${esc(t.name)} <code>${esc(t.tv_id)}</code>
           <span class="badge ${t.online ? 'on' : 'off'}">${esc(tr(t.online ? 'page.online' : 'page.offline'))}</span></h2>
-        <p class="muted">${esc(t.model)} · ${esc(t.ip)} · ${esc(tr('page.lastSeen', { time: t.lastSeen }))}</p>
+        <p class="muted">${esc(t.model)} · ${esc(t.ip)} · ${esc(tr('page.lastSeen', { time: whenLabel(t.lastSeen || t.registeredAt) }))}</p>
         ${accessHtml(t)}
         <form method="post" action="tvs/${encodeURIComponent(t.tv_id)}">
           <label>${esc(tr('page.tvName'))}<input name="name" value="${esc(t.name)}"></label>

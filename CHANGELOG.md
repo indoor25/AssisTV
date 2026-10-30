@@ -3,6 +3,19 @@
 Versions: the TV player (`config.xml`) and the Home Assistant add-on (`ha-addon/epg_builder/config.yaml`)
 are numbered separately.
 
+## Player 1.4.2 · Add-on 2.21.1
+
+First-run fixes, found by walking through a new TV setup:
+- Player: with no add-on address the player opens Settings right on that field, with a short explanation
+  (before: a black screen and a 12-second message).
+- Player: when the add-on is unreachable and nothing is cached, the "No playlists" window opens with its Settings row.
+- Player: a TV without channels picks up a playlist as soon as the add-on has built it and starts the first
+  channel (before: only after pressing OK on the playlist, or after up to 3 hours).
+- Player: the playlist window says when a playlist failed to load in the add-on or is still being prepared;
+  "open" is translated.
+- Player: a message at the bottom no longer covers the Save button in Settings.
+- Add-on: "last seen" of a TV is a readable date, and is shown right after pairing (before: "{time}").
+
 ## Player 1.4.0 · Add-on 2.21.0 — first public release
 
 The project is now called **AssisTV**.

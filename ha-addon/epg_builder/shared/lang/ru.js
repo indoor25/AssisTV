@@ -49,6 +49,9 @@
         'playlists.empty': 'Плейлистов нет — они добавляются в аддоне Home Assistant (адрес аддона — в Настройках)',
         'playlists.kindVod': 'Кино',
         'playlists.kindTv': 'ТВ',
+        'playlists.open': 'открыт',
+        'playlists.failed': 'не загрузился — проверьте ссылку в аддоне',
+        'playlists.building': 'собирается…',
 
         'home.settings': 'Настройки',
         'home.groupLocked': 'Группа защищена PIN-кодом',
@@ -138,6 +141,7 @@
         'settings.offsetNone': 'нет',
         'settings.offsetHours': '{h} ч',
         'settings.save': 'Сохранить',
+        'settings.needAddon': 'Впишите адрес аддона AssisTV в Home Assistant (например, 192.168.1.10:8765) и нажмите «Сохранить». OK — начать ввод.',
         'settings.cancel': 'Отмена',
         'settings.thisTv': 'Этот телевизор',
         'settings.notWritten': 'данные не записались в память',

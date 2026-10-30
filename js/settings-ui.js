@@ -290,12 +290,19 @@ const SettingsUI = (() => {
         }
     }
 
-    function open(defaults) {
+    /** opts.focus — ключ поля, на котором встать (addonUrl…); opts.note — пояснение над полями. */
+    function open(defaults, opts = {}) {
         if (!container) return;
         populate(defaults);
+        if (opts.note) {
+            const note = document.createElement('div');
+            note.className = 'settings-note';
+            note.textContent = opts.note;
+            container.insertBefore(note, container.firstChild);
+        }
         container.classList.remove('hidden');
         container.scrollTop = 0;
-        setFocus(0);
+        setFocus(Math.max(0, focusables.indexOf(inputs[opts.focus])));
     }
 
     function close() {

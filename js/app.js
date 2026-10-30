@@ -217,6 +217,11 @@ async function reloadFromAddon(reg, offline) {
 
 /** Старт: регистрация в аддоне (или кеш), затем всё остальное. */
 async function startFromAddon() {
+    // первый запуск: без адреса аддона дальше идти некуда — сразу Настройки на этом поле
+    if (!String(CONFIG.addonUrl || '').trim()) {
+        openSettings({ focus: 'addonUrl', note: I18n.t('settings.needAddon') });
+        return;
+    }
     showEpgStatus(I18n.t('addon.connecting'));
     let reg;
     try {
@@ -224,6 +229,8 @@ async function startFromAddon() {
     } catch (err) {
         showEpgStatus(I18n.t('playlist.unavailable'), 6000);
         addonDown(err.message || String(err), false);
+        // ни каналов, ни кеша: окно «Плейлистов нет» со строкой Настроек, а не чёрный экран
+        if (!channels.length && !menuOpen() && !SettingsUI.isOpen()) openPlaylistChooser();
         return;
     }
     if (reg.pairing) { showEpgStatus('', 1); waitForPairing(reg.pairing); return; }
@@ -273,13 +280,25 @@ async function onAddonPlaylistsChanged() {
         openHome();
     }
     const changed = (CONFIG.activeTv && CONFIG.activeTv.name) !== prevName;
-    // пока открыт какой-то экран — не перерисовываем (сбило бы фокус); EPG подтянется по таймеру
-    if (!changed && screensBusy()) return;
+    // пока открыт какой-то экран — не перерисовываем (сбило бы фокус); EPG подтянется по таймеру.
+    // Каналов ещё нет (первая настройка) — сбивать нечего: берём сразу, иначе ждать бы до 3 часов.
+    const wasEmpty = !channels.length;
+    if (!changed && !wasEmpty && screensBusy()) return;
+    let result;
     try {
-        await loadActiveTvPlaylist(false);
+        result = await loadActiveTvPlaylist(false);
         refreshChannelsUi();
     } catch (err) {
         console.error('[Addon] playlist reload failed', err);
+        return;
+    }
+    // появились первые каналы — убираем пустое окно и главный экран, включаем канал
+    if (wasEmpty && channels.length && !SettingsUI.isOpen() && !ExitDialogUI.isOpen() && !PairingUI.isOpen() && !VodUI.isOpen()) {
+        PlaylistDialogUI.close();
+        if (HomeUI.isOpen()) HomeUI.close();
+        Player.playChannel(lastOrFirstChannel());
+        showToast(I18n.t(result && result.hasEpg ? 'playlist.loaded' : 'playlist.loadedNoEpg',
+            { name: CONFIG.activeTv.name, n: channels.length }), 'ok', 5000);
     }
 }
 
@@ -541,6 +560,17 @@ function togglePlayPause() {
 }
 
 /** Всплывающее сообщение внизу экрана. kind: 'ok' | 'error'. */
+function hideToast() {
+    clearTimeout(showToast._t);
+    document.getElementById('toast').classList.add('hidden');
+}
+
+/** Настройки. Висящая плашка внизу закрыла бы кнопку «Сохранить» — убираем её. */
+function openSettings(opts) {
+    hideToast();
+    SettingsUI.open(CONFIG_DEFAULTS, opts);
+}
+
 function showToast(text, kind = 'ok', ms = 4000) {
     const el = document.getElementById('toast');
     el.textContent = text;
@@ -622,7 +652,7 @@ function settingsInfo() {
 function openPlaylistChooser() {
     const list = CONFIG.playlists;
     PlaylistDialogUI.open(
-        list.map(p => ({ name: p.name, kind: p.kind === 'vod' ? 'vod' : 'tv' })),
+        list.map(p => ({ name: p.name, kind: p.kind === 'vod' ? 'vod' : 'tv', state: p.failed ? 'failed' : p.ready === false ? 'building' : '' })),
         Math.max(0, list.findIndex(p => p.name === viewPlaylist)),
         pickPlaylist
     );
@@ -1650,12 +1680,12 @@ async function main() {
     PlayerBarUI.init(document.getElementById('player-bar'));
     HomeUI.init(document.getElementById('home-view'), {
         onSelect: playFromOverlay,
-        onSettings: () => SettingsUI.open(CONFIG_DEFAULTS),
+        onSettings: () => openSettings(),
         onLockedGroup: () => askPin(() => HomeUI.setZone('grid'))
     });
     ExitDialogUI.init(document.getElementById('exit-dialog'));
     PairingUI.init(document.getElementById('pairing-view'));
-    PlaylistDialogUI.init(document.getElementById('playlist-dialog'), { onSettings: () => SettingsUI.open(CONFIG_DEFAULTS) });
+    PlaylistDialogUI.init(document.getElementById('playlist-dialog'), { onSettings: () => openSettings() });
     SuggestUI.init({
         // постеры лежат в аддоне под именем из id («portal:48357» → portal_48357.jpg), как у избранного
         posterUrl: id => AddonClient.base(CONFIG.addonUrl) + '/posters/' + String(id).replace(/[^\w-]+/g, '_') + '.jpg',
@@ -1893,7 +1923,7 @@ async function main() {
             if (ExitDialogUI.isOpen()) ExitDialogUI.moveFocus(1);
             else if (SettingsUI.isOpen()) SettingsUI.changeValue(1);
             // окно плейлистов — общее для ТВ и фильмов (и единственное, когда аддона нет): ► — настройки
-            else if (PlaylistDialogUI.isOpen()) SettingsUI.open(CONFIG_DEFAULTS);
+            else if (PlaylistDialogUI.isOpen()) openSettings();
             else if (VodUI.isOpen()) { if (!VodUI.isEditing()) VodUI.handleKey('right'); }
             else if (HomeUI.isOpen()) HomeUI.moveHorizontal(1);
             else if (PlayerBarUI.isOpen()) PlayerBarUI.moveFocus(1);
@@ -1923,7 +1953,7 @@ async function main() {
         },
 
         // Цветные кнопки — только дубли для пультов, где они есть.
-        onGreen: () => { if (!ExitDialogUI.isOpen()) { closeOverlays(); SettingsUI.toggle(CONFIG_DEFAULTS); } },
+        onGreen: () => { if (!ExitDialogUI.isOpen()) { closeOverlays(); if (SettingsUI.isOpen()) SettingsUI.close(); else openSettings(); } },
         onRed: () => { if (ChannelListUI.isOpen() && !SideMenuUI.isOpen() && !ChannelEpgUI.isActive()) { ChannelEpgUI.close(); ChannelListUI.toggleLogoEdit(); } },
         onBlue: () => { if (ChannelListUI.isOpen() && !SideMenuUI.isOpen() && !ChannelEpgUI.isActive()) { ChannelEpgUI.close(); ChannelListUI.toggleReorderMode(); } },
         // Долгое OK в боковом списке (обычный просмотр списка, поверх ничего не открыто) —
@@ -1960,7 +1990,7 @@ async function main() {
             // ждём привязки к аддону: OK — Настройки (адрес аддона), RETURN — выход; остальное не нужно
             if (PairingUI.isOpen() && !SettingsUI.isOpen() && !ExitDialogUI.isOpen()) {
                 if (name === 'wantsLongEnter') return false;
-                if (name === 'onEnter') SettingsUI.open(CONFIG_DEFAULTS);
+                if (name === 'onEnter') openSettings();
                 else if (name === 'onBack') ExitDialogUI.open();
                 else if (name === 'onGreen') fn.apply(null, arguments);
                 return;

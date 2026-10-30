@@ -4,7 +4,7 @@
  * (поверх окна), RETURN — диалог «Закрыть программу?» (это в
  * app.js; окно остаётся под диалогом, «Нет» возвращает сюда).
  *
- * items: [{ name, kind: 'tv' | 'vod' }], onPick(index); opts.onSettings — строка «Настройки».
+ * items: [{ name, kind: 'tv' | 'vod', state?: 'failed' | 'building' }], onPick(index); opts.onSettings — строка «Настройки».
  */
 const PlaylistDialogUI = (() => {
     let container = null;
@@ -57,6 +57,16 @@ const PlaylistDialogUI = (() => {
             name.textContent = it.name;
             row.appendChild(kind);
             row.appendChild(name);
+            // справа: «не загрузился» / «собирается…» (из аддона), иначе «открыт» у текущего
+            const noteText = it.state === 'failed' ? I18n.t('playlists.failed')
+                : it.state === 'building' ? I18n.t('playlists.building')
+                : i === current ? I18n.t('playlists.open') : '';
+            if (noteText) {
+                const note = document.createElement('span');
+                note.className = 'playlist-dialog-note' + (it.state === 'failed' ? ' failed' : '');
+                note.textContent = noteText;
+                row.appendChild(note);
+            }
             row.addEventListener('click', () => { focused = i; activateFocused(); });
             listEl.appendChild(row);
         });

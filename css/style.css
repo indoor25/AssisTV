@@ -188,7 +188,8 @@ body.home-open #clock, body.home-open #clock.left { left: auto; right: var(--hom
 .pairing-code { font-size: 140px; font-weight: bold; letter-spacing: 16px; margin: 40px 0; color: #fff; font-variant-numeric: tabular-nums; }
 .pairing-keys { font-size: 26px; color: #888; margin-top: 30px; }
 
-#settings-view { z-index: 88; }   /* выше окна плейлистов (85) — из него ► открывает настройки */
+#settings-view { z-index: 88; }
+.settings-note { font-size: 26px; line-height: 1.4; padding: 18px 24px; margin-bottom: 24px; border-radius: 10px; background: #1a4fa0; }   /* выше окна плейлистов (85) — из него ► открывает настройки */
 .settings-choice { flex: 1; font-size: 24px; padding: 10px 14px; border-radius: 6px; border: 2px solid transparent; background: #222; box-sizing: border-box; }
 .settings-choice.focused { border-color: #2f7bff; }
 
@@ -213,7 +214,9 @@ body.home-open #clock, body.home-open #clock.left { left: auto; right: var(--hom
 .playlist-dialog-item { display: flex; align-items: center; gap: 20px; padding: 18px 24px; font-size: 30px; border-radius: 10px; white-space: nowrap; overflow: hidden; }
 .playlist-dialog-item.focused { background: #2f7bff; }
 .playlist-dialog-item.current .playlist-dialog-name { font-weight: bold; }
-.playlist-dialog-item.current::after { content: 'открыт'; margin-left: auto; padding-left: 30px; font-size: 20px; opacity: 0.7; }
+.playlist-dialog-note { margin-left: auto; padding-left: 30px; font-size: 20px; opacity: 0.7; }
+.playlist-dialog-note.failed { opacity: 1; color: #ff8a80; }
+.playlist-dialog-item.focused .playlist-dialog-note.failed { color: #fff; }
 .playlist-dialog-kind { flex: 0 0 auto; min-width: 70px; text-align: center; font-size: 18px; font-weight: bold; padding: 5px 12px; border-radius: 6px; background: #1a4fa0; }
 .playlist-dialog-kind.vod { background: #b3541e; }
 .playlist-dialog-settings { margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.15); border-radius: 0 0 10px 10px; opacity: 0.85; }

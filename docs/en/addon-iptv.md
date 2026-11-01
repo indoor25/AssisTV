@@ -74,6 +74,10 @@ The movie card shows both scores.
 Turn on **"Show in sidebar"** for the add-on — an item with its page appears in the HA menu (the page is
 also available at `http://<HA IP>:8765/`). It has:
 
+- **Pair a TV**: requests from new TVs with a 6-digit code — "Pair" or "Decline". Every paired TV has
+  "Unpair" (it will have to pair again).
+- **Plugins**: movie sources — install by link or file, settings, "Enabled", "Work on the TV without the
+  add-on", removal ([vod-plugins.md](vod-plugins.md)).
 - **TVs**: each TV's name, the `remote.*` and `media_player.*` entities for power and app launch, MQTT
   topics, the card's YAML, a "Remove TV" button. A TV appears in the list by itself when the app starts on
   it for the first time. The device's area is set in HA (Settings → Devices), the name — here.
@@ -87,24 +91,35 @@ also available at `http://<HA IP>:8765/`). It has:
 
 ## Service addresses
 
-| Address | Purpose |
-|---------|---------|
-| `/playlists.json` | list of playlists for the TV |
-| `/playlists/<id>.json` | channels + EPG of one M3U (for a movie source — its link) |
-| `/playlists/<id>/archive.json?name=` | the guide for past days, for the archive |
-| `/playlists/<id>/programme.json?name=&at=` | programme description (genre, age rating, text) |
-| `/tvs.json`, `POST /tvs/register` | TV registry and registration |
-| `/status` | build state: time, size, how many channels matched, the unmatched ones, the last error, movie sources (`vod_sources`), Kinopoisk quota |
-| `/rebuild` | rebuild now (`?force=1` — accept the EPG even if it looks truncated) |
-| `/vod/search?q=matrix` | movie search (handy to check from a browser); `&src=<type>` — in one source |
-| `/vod/meta?title=&year=&kind=` | rating, genres, description |
-| `/vod/reviews?id=<Kinopoisk id>&page=1` | reviews |
-| `/favorites.json`, `POST /favorites` | favourites |
-| `/posters/<id>.jpg` | posters (the add-on's cache) |
-| `/vod-sources.json`, `/vod-sources/<type>.js` | source plugins for the TV |
+Who can open an address: **all** — anyone on the home network; **TV** — a paired TV (with its token, see
+[install-tv.md](install-tv.md), "First start"); **HA** — only through the Home Assistant sidebar (ingress). The "TV" addresses also open
+through the HA sidebar, so that is the handy place to check them from a browser. Other add-ons (the hassio
+network) can read `/tvs.json` and the full `/status`.
 
-If the EPG has never been built yet, data is served with error 503; the last successful build is kept in
-`/data`, so after a restart the TV gets it at once.
+| Address | Who | Purpose |
+|---------|-----|---------|
+| `/` | all | the add-on page; directly on `:8765` — only a hint, settings live in the HA sidebar |
+| `/status` | all | build state: time, size, how many channels matched, the unmatched ones, the last error, movie sources (`vod_sources`), Kinopoisk quota; directly — a short version |
+| `POST /tvs/register` | all | TV registration; an unknown TV gets a pairing code |
+| `/posters/<id>.jpg` | all | posters (the add-on's cache) |
+| `/playlists.json` | TV | list of playlists for the TV |
+| `/playlists/<id>.json` | TV | channels + EPG of one M3U |
+| `/playlists/<id>/archive.json?name=` | TV | the guide for past days, for the archive |
+| `/playlists/<id>/programme.json?name=&at=` | TV | programme description (genre, age rating, text) |
+| `POST /vod/call` | TV | calls a method of a movie source plugin (`{playlist, method, args}`) |
+| `/vod/search?q=matrix` | TV | movie search; `&src=<type>` — in one source |
+| `/vod/meta?title=&year=&kind=` | TV | rating, genres, description |
+| `/vod/reviews?id=<Kinopoisk id>&page=1` | TV | reviews |
+| `/favorites.json`, `POST /favorites` | TV | favourites |
+| `/vod-sources.json`, `/vod-sources/<type>.js` | TV | copies of plugins marked "without the add-on" |
+| `POST /parental/check` | TV | checks the parental control PIN |
+| `WS /mqtt` | TV | the TV's MQTT through the add-on: login — tv_id, password — token; its own topics only |
+| `/tvs.json`, `/tvs/…` | HA | TV registry, name, power entities, removal |
+| `/pairing/…` | HA | pairing by code, resetting a pairing |
+| `/plugins/…` | HA | installing, configuring and removing plugins |
+| `/mapping…` | HA | manual matching of channels to the guide |
+| `/parental/pin`, `/parental/off`, `/parental/groups` | HA | parental control |
+| `/rebuild` | HA | rebuild now (`?force=1` — accept the EPG even if it looks truncated) |
 
 **Protection against a truncated EPG.** Sources sometimes serve a cut-off file (the guide ends in a couple
 of hours). If in the fresh EPG noticeably fewer channels have programmes more than 6 hours ahead than in the

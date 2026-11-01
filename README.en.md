@@ -102,7 +102,7 @@ All examples with explanations are in **[docs/en/usage.md](docs/en/usage.md)**.
 
 | What | Why |
 |------|-----|
-| A Samsung Tizen TV (roughly 2017 or newer) | the player runs on it |
+| A Samsung Tizen TV, 2017 or newer (2017–2020 — with the special `-Legacy` build) | the player runs on it |
 | Home Assistant OS (Raspberry Pi 4/5, mini PC, virtual machine) | the add-on and the control; you need the "Apps" section (called "Add-ons" in older versions) |
 | An IPTV playlist (M3U link) from your provider | channels |
 | A TV guide link (XMLTV, `.xml` or `.xml.gz`) | EPG; providers often give one |

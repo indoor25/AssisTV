@@ -77,30 +77,44 @@ The script builds the package from a clean copy (only the player's files go into
 - Cannot connect — check that developer mode on the TV has this computer's IP.
 - A successful installation ends with `Installed the package: Id(TzIptvPl01)` or similar.
 
+**A 2017–2020 TV** (Tizen 3–5.5; the model shows the year: …M… — 2017, …N… — 2018, …R… — 2019,
+…T… — 2020): add **`-Legacy`** — the script converts the code for the TV's older browser and builds
+`.buildResultAssisTV-legacy.wgt`. It needs [Node.js](https://nodejs.org) (run `npm install` once in
+`toolslegacy`):
+
+```powershell
+cd C:AssisTV	oolslegacy; npm install; cd C:AssisTV
+.	oolsuild-wgt.ps1 -Cert mytv -Legacy -Install 192.168.1.20:26101
+```
+
+The regular build simply does not install on such a TV (an error about the platform version).
+
 On macOS/Linux the script runs in PowerShell 7 (`pwsh`) when Tizen Studio is in PATH
 (`~/tizen-studio/tools/ide/bin` and `~/tizen-studio/tools`).
 
 ## 2.7. First start
 
 1. On the TV open **Apps** — **AssisTV** is there. Start it.
-2. The player does not know the add-on address yet, so a **"No playlists"** window appears with the focus
-   on the **"⚙ Settings"** line.
-3. Press **OK** — **Settings** open. (If the window closed — **CH+** on the home screen → **Settings**.)
-4. Select the **"Add-on address"** field and press **OK** — the keyboard appears. Enter
-   `http://<HA IP>:8765` (for example `http://192.168.1.10:8765`) and close the keyboard.
-5. **"Save"** at the bottom → **OK**. "Settings saved, playlist loaded (N channels)" appears.
+2. The player does not know the add-on address yet, so **Settings** open right away on the
+   **"Add-on address"** field, with a hint at the top.
+3. Press **OK** — the keyboard appears. Enter `<HA IP>:8765` (for example `192.168.1.10:8765`) and close
+   the keyboard.
+4. **"Save"** at the bottom → **OK**.
+5. **Pairing.** The TV shows a **6-digit code**. In Home Assistant open the **AssisTV** item in the sidebar →
+   the **"Pair a TV"** section: there is a request with the same code — press **"Pair"**. A couple of
+   seconds later the TV loads the playlist by itself and starts the first channel.
+   Pairing is needed once: this way another device on the network does not get your playlists and controls.
 6. RETURN — the home screen; choose a channel.
 
 The player takes its language from the TV menu (English if there is no translation). To change it:
 Settings → **Language**.
 
-Check in Home Assistant: the **AssisTV** item in the sidebar — the TV is in the list. Give it a name, a remote,
-a media_player and a room (see [install-ha-addons.md](install-ha-addons.md), step 1.5).
+On the same AssisTV page give the TV a name, a remote, a media_player and a room
+(see [install-ha-addons.md](install-ha-addons.md), step 1.5).
 
-Leave the **MQTT** field in the settings empty: the TV gets its login from the add-on. Fill it in only if
-the card and voice do not see the TV (the Mosquitto log shows a refused login): then create a user in Home
-Assistant (Settings → People → Users, without administrator rights) and enter its login and password, host —
-`<HA IP>`, port — `1884`.
+Leave the **MQTT** field in the settings empty: the TV gets Home Assistant's commands through the add-on,
+with its own token. Your own broker connection (host, port `1884`, login) is only for those who want to
+keep the add-on out of this chain.
 
 How to use it — [usage.md](usage.md).
 
@@ -123,6 +137,8 @@ kept.
 | `install` — `Failed to install Tizen application` with no details | the project path has spaces or non-Latin letters — move it to `C:\AssisTV` |
 | A black screen with red text | that is a start-up error and the text says what; a frequent cause is a wrong add-on address |
 | Channels are there but the card and voice do not see the TV | check Mosquitto's port 1884 (step 1.1) and the MQTT field in the settings (above) |
+| A pairing code on screen, but no request in HA | reload the AssisTV page; the add-on address in Settings must point to this Home Assistant |
+| The playlist window says "failed to load — check the link in the add-on" | the playlist link in the add-on options is wrong or expired — details in `/status` (`lastError`) |
 | "Home Assistant add-on is unavailable" | Home Assistant is off or the add-on address is wrong; the player works with the saved channels and retries every minute |
 
 `sdb shell` and `sdb dlog` usually do not work on Samsung TVs — that is a firmware restriction, not a

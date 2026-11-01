@@ -1,0 +1,75 @@
+name: Add-on images
+
+# Ready-made add-on images on GHCR, so Home Assistant installs the add-on without building it on the device.
+# One image per architecture (Home Assistant pulls ghcr.io/<owner>/assistv-<arch>:<version>).
+# A version is built once: if its tag already exists, the job does nothing.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ha-addon/epg_builder/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: aarch64
+            platform: linux/arm64
+          - arch: amd64
+            platform: linux/amd64
+          - arch: armv7
+            platform: linux/arm/v7
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Version and image name
+        id: meta
+        run: |
+          version=$(sed -n 's/^version: *"\{0,1\}\([^"]*\)"\{0,1\} *$/\1/p' ha-addon/epg_builder/config.yaml)
+          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/$owner/assistv-${{ matrix.arch }}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Already built?
+        id: exists
+        run: |
+          if docker manifest inspect "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}" > /dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Image ${{ steps.meta.outputs.version }} for ${{ matrix.arch }} already exists"
+          fi
+
+      - uses: docker/setup-qemu-action@v3
+        if: steps.exists.outputs.skip != 'true'
+      - uses: docker/setup-buildx-action@v3
+        if: steps.exists.outputs.skip != 'true'
+
+      - uses: docker/build-push-action@v6
+        if: steps.exists.outputs.skip != 'true'
+        with:
+          context: ha-addon/epg_builder
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.image }}:latest
+          labels: |
+            io.hass.name=AssisTV
+            io.hass.type=addon
+            io.hass.arch=${{ matrix.arch }}
+            io.hass.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.licenses=GPL-3.0-only

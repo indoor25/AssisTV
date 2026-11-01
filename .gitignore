@@ -38,3 +38,7 @@ desktop.ini
 CLAUDE.md
 CLAUDE.local.md
 AGENTS.md
+
+# сайт документации (tools/site/prepare.js, mkdocs build)
+.site-src/
+.site/

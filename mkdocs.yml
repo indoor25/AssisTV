@@ -1,0 +1,60 @@
+# Сайт документации (GitHub Pages). Источник — docs/ и README; собирается так:
+#   node tools/site/prepare.js && mkdocs build      (pip install -r tools/site/requirements.txt)
+site_name: AssisTV
+site_description: IPTV player for Samsung Tizen TVs, controlled from Home Assistant
+site_url: https://indoor25.github.io/AssisTV/
+repo_url: https://github.com/indoor25/AssisTV
+repo_name: indoor25/AssisTV
+edit_uri: ''
+docs_dir: .site-src
+site_dir: .site
+copyright: AssisTV — free and open-source software, GPL-3.0
+theme:
+  name: material
+  language: ru
+  logo: logo/assistv.svg
+  favicon: logo/assistv-512.png
+  palette:
+    - media: '(prefers-color-scheme: light)'
+      scheme: default
+      primary: light blue
+      toggle: { icon: material/weather-night, name: Dark }
+    - media: '(prefers-color-scheme: dark)'
+      scheme: slate
+      primary: light blue
+      toggle: { icon: material/weather-sunny, name: Light }
+  features:
+    - navigation.sections
+    - content.code.copy
+extra:
+  alternate:
+    - { name: Русский, link: /AssisTV/, lang: ru }
+    - { name: English, link: /AssisTV/en/, lang: en }
+markdown_extensions:
+  - tables
+  - admonition
+  - toc:
+      permalink: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify { kwds: { case: lower } }
+nav:
+  - Русский:
+      - AssisTV: index.md
+      - 1. Аддон в Home Assistant: install-ha-addons.md
+      - 2. Приложение на телевизор: install-tv.md
+      - 3. Карточка на панель: ha-dashboards.md
+      - 4. Голос и чат (Assist): assist.md
+      - Как пользоваться: usage.md
+      - Все настройки аддона: addon-iptv.md
+      - Источники фильмов (плагины): vod-plugins.md
+      - Обновление и резервные копии: backup.md
+  - English:
+      - AssisTV: en/index.md
+      - 1. Add-on in Home Assistant: en/install-ha-addons.md
+      - 2. The app on the TV: en/install-tv.md
+      - 3. Dashboard card: en/ha-dashboards.md
+      - 4. Voice and chat (Assist): en/assist.md
+      - How to use: en/usage.md
+      - All add-on settings: en/addon-iptv.md
+      - Movie sources (plugins): en/vod-plugins.md
+      - Updates and backups: en/backup.md
+      - Voice search of channels: voice-search.md

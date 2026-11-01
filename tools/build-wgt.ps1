@@ -4,13 +4,16 @@
 #   .\tools\build-wgt.ps1 -Cert mytv
 #   .\tools\build-wgt.ps1 -Cert mytv -Install 192.168.1.20:26101
 #   .\tools\build-wgt.ps1 -Cert mytv -Defaults my-defaults.js   # свои умолчания (см. js/local-defaults.js)
+#   .\tools\build-wgt.ps1 -Cert mytv -Legacy                     # для старых TV (Tizen 3–5) → AssisTV-legacy.wgt
 #
 # Cert — профиль сертификата Tizen Studio (tizen security-profiles list).
 # Install — sdb-адрес телевизора: пакет сразу ставится (sdb connect, tizen install, sdb disconnect).
+# Legacy — JS в ES5, полифилы, CSS-заплатки (tools/legacy/build-legacy.js); нужен Node.js.
 param(
     [Parameter(Mandatory = $true)][string]$Cert,
     [string]$Defaults = '',
-    [string]$Install = ''
+    [string]$Install = '',
+    [switch]$Legacy
 )
 $ErrorActionPreference = 'Stop'
 
@@ -27,6 +30,16 @@ try {
         Copy-Item (Resolve-Path $Defaults) (Join-Path $stage 'js\local-defaults.js') -Force
         Write-Host "умолчания: $Defaults"
     }
+    if ($Legacy) {
+        $legacyTools = Join-Path $PSScriptRoot 'legacy'
+        if (-not (Test-Path (Join-Path $legacyTools 'node_modules'))) {
+            Push-Location $legacyTools
+            try { npm install --no-audit --no-fund | Out-Null } finally { Pop-Location }
+            if ($LASTEXITCODE) { throw 'npm install в tools/legacy не прошёл' }
+        }
+        node (Join-Path $legacyTools 'build-legacy.js') $stage
+        if ($LASTEXITCODE) { throw 'сборка legacy не прошла' }
+    }
 
     Push-Location $stage
     try {
@@ -39,8 +52,9 @@ try {
     $dest = Join-Path $root '.buildResult'
     New-Item -ItemType Directory -Force $dest | Out-Null
     $wgt = Get-Item (Join-Path $stage '.buildResult\*.wgt')
-    Copy-Item $wgt.FullName $dest -Force
-    $pkg = Join-Path $dest $wgt.Name
+    $name = if ($Legacy) { $wgt.BaseName + '-legacy.wgt' } else { $wgt.Name }
+    $pkg = Join-Path $dest $name
+    Copy-Item $wgt.FullName $pkg -Force
     Write-Host ("пакет: {0} ({1:N0} КБ)" -f $pkg, ((Get-Item $pkg).Length / 1KB))
 
     if ($Install) {

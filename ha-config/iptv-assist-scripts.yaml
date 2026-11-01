@@ -28,7 +28,9 @@ iptv_zapros:
         object: {}
   sequence:
     - variables:
-        rid: "{{ context.id }}"
+        # context.id is the same for every tool call of one AI reply — without the tail a second call
+        # would take the previous call's answer as its own
+        rid: "{{ context.id }}-{{ now().timestamp() }}-{{ range(100000) | random }}"
     - action: mqtt.publish
       data:
         topic: iptv/request

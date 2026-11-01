@@ -1,0 +1,12 @@
+{
+  "name": "assistv-legacy-build",
+  "private": true,
+  "description": "Сборка для старых TV (Tizen 3–5): JS в ES5, полифилы, CSS-заплатки. Вызывается из tools/build-wgt.ps1 -Legacy",
+  "dependencies": {
+    "@babel/core": "7.26.0",
+    "@babel/preset-env": "7.26.0",
+    "acorn": "8.14.0",
+    "core-js-bundle": "3.39.0",
+    "regenerator-runtime": "0.14.1"
+  }
+}

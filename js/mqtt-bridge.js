@@ -134,14 +134,20 @@ const MqttBridge = (() => {
         tv = { tv_id: tvInfo.tv_id, name: tvInfo.name || tvInfo.tv_id, area: tvInfo.area || '' };
         T = topics(tv.tv_id);
         const myTopics = T;
+        // старый TV (Tizen 3, Chromium 47): нет performance.timeOrigin, а переключение канала замирает на 4–10 с
+        const oldEngine = performance.timeOrigin === undefined;
         // mqtt.js browser build exposes global `mqtt`
         const c = mqtt.connect(`ws://${host}:${port}${path}`, {
             username, password,
             clientId: 'tizen-iptv-' + tv.tv_id + '-' + Math.random().toString(16).slice(2, 8),
             reconnectPeriod: 5000,
             // брокер считает клиента пропавшим через 1,5 × keepalive; при 60 с по умолчанию выключенный TV
-            // ещё ~40–90 с числился в HA «воспроизводящим»
-            keepalive: 10,
+            // ещё ~40–90 с числился в HA «воспроизводящим». Старому TV — 30 с: при 10 с замирание на
+            // переключении канала рвало связь, и команды, пришедшие в это время, терялись
+            keepalive: oldEngine ? 30 : 10,
+            // таймеры mqtt.js по умолчанию — в Web Worker и считают от performance.timeOrigin; на старом TV
+            // его нет — ping не уходит, брокер рвёт связь каждые ~30 с
+            timerVariant: oldEngine ? 'native' : 'auto',
             will: { topic: T.availability, payload: 'offline', retain: true, qos: 0 }
         });
         client = c;

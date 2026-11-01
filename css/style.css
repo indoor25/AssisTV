@@ -181,12 +181,35 @@ body.home-open #clock, body.home-open #clock.left { left: auto; right: var(--hom
 .exit-dialog-button.focused { background: #2f7bff; }
 
 /* код привязки к аддону: под Настройками (88) и диалогом выхода (90) — оба открываются с этого экрана */
-#pairing-view { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: #000; display: flex; align-items: center; justify-content: center; z-index: 87; }
+#pairing-view { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: radial-gradient(ellipse at 50% 35%, #16263d 0%, #070b12 70%); display: flex; align-items: center; justify-content: center; z-index: 87; }
 .pairing-box { max-width: 1300px; text-align: center; }
 .pairing-title { font-size: 48px; font-weight: bold; margin-bottom: 48px; }
 .pairing-step { font-size: 32px; color: #ccc; margin: 14px 0; }
 .pairing-code { font-size: 140px; font-weight: bold; letter-spacing: 16px; margin: 40px 0; color: #fff; font-variant-numeric: tabular-nums; }
 .pairing-keys { font-size: 26px; color: #888; margin-top: 30px; }
+.pairing-wizard-step { font-size: 26px; color: #18bcf2; letter-spacing: 1px; margin-bottom: 14px; }
+
+/* Мастер первого запуска (js/wizard-ui.js) — поверх всего, кроме диалога выхода. Без flex gap — старые TV (-Legacy). */
+#wizard-view { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: radial-gradient(ellipse at 50% 35%, #16263d 0%, #070b12 70%); display: flex; align-items: center; justify-content: center; z-index: 89; }
+.wizard-box { width: 1240px; text-align: center; }
+.wizard-logo { width: 128px; height: 128px; border-radius: 28px; margin-bottom: 28px; }
+.wizard-step { font-size: 26px; color: #18bcf2; letter-spacing: 1px; margin-bottom: 14px; }
+.wizard-title { font-size: 56px; font-weight: bold; margin-bottom: 30px; }
+.wizard-text { font-size: 30px; line-height: 1.45; color: #cfd6e0; margin-bottom: 44px; }
+.wizard-row { display: flex; align-items: center; justify-content: center; margin-bottom: 44px; }
+.wizard-label { font-size: 30px; color: #9aa6b5; margin-right: 28px; }
+.wizard-choice { font-size: 32px; padding: 14px 30px; border-radius: 10px; background: #1d2633; border: 3px solid transparent; min-width: 460px; }
+.wizard-input { width: 760px; font-size: 40px; padding: 18px 24px; border-radius: 10px; border: 3px solid transparent; background: #1d2633; color: #fff; text-align: center; box-sizing: border-box; margin-bottom: 18px; }
+.wizard-choice.focused, .wizard-input.focused { border-color: #2f7bff; }
+.wizard-error { font-size: 28px; color: #ff8a80; min-height: 40px; margin-bottom: 20px; }
+.wizard-error.info { color: #9aa6b5; }
+.wizard-buttons { display: flex; justify-content: center; margin: 10px 0 36px; }
+.wizard-button { font-size: 32px; padding: 16px 52px; border-radius: 10px; background: #1d2633; margin: 0 14px; border: 3px solid transparent; }
+.wizard-button.primary { background: #24466f; }
+.wizard-button.focused { background: #2f7bff; border-color: #fff; }
+.wizard-keys { font-size: 24px; color: #6f7c8c; }
+.wizard-hints { display: inline-block; text-align: left; margin-bottom: 40px; }
+.wizard-hint { font-size: 30px; color: #e3e8ef; margin: 10px 0; }
 
 #settings-view { z-index: 88; }
 .settings-note { font-size: 26px; line-height: 1.4; padding: 18px 24px; margin-bottom: 24px; border-radius: 10px; background: #1a4fa0; }   /* выше окна плейлистов (85) — из него ► открывает настройки */

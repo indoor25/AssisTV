@@ -94,22 +94,22 @@ On macOS/Linux the script runs in PowerShell 7 (`pwsh`) when Tizen Studio is in 
 
 ## 2.7. First start
 
-1. On the TV open **Apps** — **AssisTV** is there. Start it.
-2. The player does not know the add-on address yet, so **Settings** open right away on the
-   **"Add-on address"** field, with a hint at the top.
-3. Press **OK** — the keyboard appears. Enter `<HA IP>:8765` (for example `192.168.1.10:8765`) and close
-   the keyboard.
-4. **"Save"** at the bottom → **OK**.
-5. **Pairing.** The TV shows a **6-digit code**. In Home Assistant open the **AssisTV** item in the sidebar →
-   the **"Pair a TV"** section: there is a request with the same code — press **"Pair"**. A couple of
-   seconds later the TV loads the playlist by itself and starts the first channel.
+1. On the TV open **Apps** — **AssisTV** is there. Start it. The **setup wizard** opens (buttons: ▲▼ select,
+   ◄► switch, OK — press, RETURN — back).
+2. **Step 1 — language.** ◄► — the interface language ("Like the TV" or one of four), OK on **"Next"**.
+3. **Step 2 — add-on address.** OK on the field — the keyboard appears. Enter `<HA IP>:8765`
+   (for example `192.168.1.10:8765`), close the keyboard, OK on **"Next"**. The player checks the address
+   right away; if the add-on does not answer, the error is shown under the field.
+4. **Step 3 — pairing.** The TV shows a **6-digit code**. In Home Assistant open the **AssisTV** item in the
+   sidebar → the **"Pair a TV"** section: there is a request with the same code — press **"Pair"**.
    Pairing is needed once: this way another device on the network does not get your playlists and controls.
-6. RETURN — the home screen; choose a channel.
+   Wrong address — OK on the code screen takes you back to step 2.
+5. **All set.** The TV loads the playlist by itself and starts the first channel; the screen shows the main
+   remote buttons. OK on **"Watch"**.
 
-The player takes its language from the TV menu (English if there is no translation). To change it:
-Settings → **Language**.
+The language and the address can be changed later in Settings (home screen → **Settings** at the top).
 
-On the same AssisTV page give the TV a name, a remote, a media_player and a room
+On the AssisTV page in Home Assistant give the TV a name, a remote, a media_player and a room
 (see [install-ha-addons.md](install-ha-addons.md), step 1.5).
 
 Leave the **MQTT** field in the settings empty: the TV gets Home Assistant's commands through the add-on,
@@ -151,7 +151,7 @@ set-up mistake.
   (`AssisTV`); breaking either rule breaks installation with no clear error.
 - Your own defaults (several TVs — no typing on each): a file with
   `window.LOCAL_DEFAULTS = { addonUrl: 'http://<HA IP>:8765' }` (example — `js/local-defaults.js`) and
-  the build `.\tools\build-wgt.ps1 -Cert mytv -Defaults <file>`. Then items 2–5 of "First start" are not needed.
+  the build `.\tools\build-wgt.ps1 -Cert mytv -Defaults <file>`. Then the wizard does not open — the TV shows the pairing code right away.
 - Bump `version` in `config.xml` with every build you install — it is the only way to tell from the network
   which player a TV has.
 - `tizen run -p TzIptvPl01.IPTVTizen -s <TV IP>:26101` starts the app from the computer.

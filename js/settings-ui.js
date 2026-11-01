@@ -319,9 +319,14 @@ const SettingsUI = (() => {
         return !!container && !container.classList.contains('hidden');
     }
 
+    /** Записать часть настроек, не открывая экран (мастер первого запуска): patch поверх сохранённого. */
+    function saveValues(patch) {
+        saveStored(Object.assign(loadStored(), patch));
+    }
+
     return {
         init, open, close, toggle, isOpen, moveFocus, activateFocused, changeValue,
-        isEditing, stopEditing, getEffectiveConfig
+        isEditing, stopEditing, getEffectiveConfig, saveValues, languageOptions
     };
 })();
 

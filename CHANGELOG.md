@@ -3,6 +3,11 @@
 Versions: the TV player (`config.xml`) and the Home Assistant add-on (`ha-addon/epg_builder/config.yaml`)
 are numbered separately.
 
+## Player 1.4.5
+
+- Player: a first-start wizard — language, the add-on address (checked right away), the pairing code, and a
+  short "which button does what" screen. Shown while the add-on address is empty.
+
 ## Add-on 2.21.2
 
 - Add-on page: the playlist build time is a readable date (before: a raw ISO timestamp).

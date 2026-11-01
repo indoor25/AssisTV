@@ -217,9 +217,9 @@ async function reloadFromAddon(reg, offline) {
 
 /** Старт: регистрация в аддоне (или кеш), затем всё остальное. */
 async function startFromAddon() {
-    // первый запуск: без адреса аддона дальше идти некуда — сразу Настройки на этом поле
+    // первый запуск: без адреса аддона дальше идти некуда — мастер (язык, адрес, код привязки)
     if (!String(CONFIG.addonUrl || '').trim()) {
-        openSettings({ focus: 'addonUrl', note: I18n.t('settings.needAddon') });
+        WizardUI.open('welcome');
         return;
     }
     showEpgStatus(I18n.t('addon.connecting'));
@@ -238,6 +238,32 @@ async function startFromAddon() {
     await reloadFromAddon(reg, reg.fromCache);
 }
 
+// ───────────────────────── Мастер первого запуска ─────────────────────────
+
+let firstRun = false;   // идёт мастер: код привязки — его шаг 3, после привязки — экран «Готово»
+const wizardPairing = () => ({ step: I18n.t('wizard.step', { n: 3, total: 3 }), keys: I18n.t('wizard.keysPairing') });
+
+/** Шаг «Адрес аддона»: адрес проверяется регистрацией; ошибка уходит в мастер и видна под полем. */
+async function wizardAddress(url) {
+    const reg = await AddonClient.register(url);
+    if (reg.fromCache) throw new Error(reg.error || 'offline');
+    SettingsUI.saveValues({ addonUrl: url });
+    applySettings();
+    firstRun = true;
+    WizardUI.close();
+    if (reg.pairing) { waitForPairing(reg.pairing); return; }
+    await reloadFromAddon(reg, false);
+    firstRun = false;
+    WizardUI.open('done');
+}
+
+/** На экране кода в мастере OK — вернуться к адресу (вдруг вписали не тот Home Assistant). */
+function wizardBackToAddress() {
+    clearTimeout(pairTimer);
+    PairingUI.hide();
+    WizardUI.open('address', CONFIG.addonUrl);
+}
+
 // ───────────────────────── Привязка к аддону ─────────────────────────
 
 const PAIR_POLL_MS = 3000;
@@ -250,16 +276,17 @@ let pairTimer = null;
 function waitForPairing(pairing) {
     clearTimeout(addonRetryTimer);
     clearTimeout(pairTimer);
-    PairingUI.show(pairing.code);
+    PairingUI.show(pairing.code, firstRun ? wizardPairing() : undefined);
     const poll = async () => {
         let reg = null;
         try { reg = await AddonClient.register(CONFIG.addonUrl); } catch (e) { /* аддон недоступен — повторим */ }
-        if (reg && reg.pairing) PairingUI.show(reg.pairing.code);   // заявка протухла — код новый
+        if (reg && reg.pairing) PairingUI.show(reg.pairing.code, firstRun ? wizardPairing() : undefined);   // заявка протухла — код новый
         if (!reg || reg.pairing || reg.fromCache) { pairTimer = setTimeout(poll, PAIR_POLL_MS); return; }
         PairingUI.hide();
         addonDownWarned = false;
-        showToast(I18n.t('pair.done'), 'ok', 4000);
+        if (!firstRun) showToast(I18n.t('pair.done'), 'ok', 4000);
         await reloadFromAddon(reg, false);
+        if (firstRun) { firstRun = false; WizardUI.open('done'); }
     };
     pairTimer = setTimeout(poll, PAIR_POLL_MS);
 }
@@ -293,7 +320,7 @@ async function onAddonPlaylistsChanged() {
         return;
     }
     // появились первые каналы — убираем пустое окно и главный экран, включаем канал
-    if (wasEmpty && channels.length && !SettingsUI.isOpen() && !ExitDialogUI.isOpen() && !PairingUI.isOpen() && !VodUI.isOpen()) {
+    if (wasEmpty && channels.length && !SettingsUI.isOpen() && !ExitDialogUI.isOpen() && !PairingUI.isOpen() && !WizardUI.isOpen() && !VodUI.isOpen()) {
         PlaylistDialogUI.close();
         if (HomeUI.isOpen()) HomeUI.close();
         Player.playChannel(lastOrFirstChannel());
@@ -1687,6 +1714,14 @@ async function main() {
     });
     ExitDialogUI.init(document.getElementById('exit-dialog'));
     PairingUI.init(document.getElementById('pairing-view'));
+    WizardUI.init(document.getElementById('wizard-view'), {
+        languages: () => SettingsUI.languageOptions(),
+        language: SettingsUI.getEffectiveConfig(CONFIG_DEFAULTS).language,
+        // новый язык — весь интерфейс собран на старом: сохранить и перезапустить, мастер откроется снова
+        onLanguage: (lang) => { SettingsUI.saveValues({ language: lang }); location.reload(); },
+        onAddress: wizardAddress,
+        onExit: () => ExitDialogUI.open()
+    });
     PlaylistDialogUI.init(document.getElementById('playlist-dialog'), { onSettings: () => openSettings() });
     SuggestUI.init({
         // постеры лежат в аддоне под именем из id («portal:48357» → portal_48357.jpg), как у избранного
@@ -2007,10 +2042,16 @@ async function main() {
                 showToast(I18n.t('sleep.cancelled'), 'ok', 4000);
                 return;
             }
-            // ждём привязки к аддону: OK — Настройки (адрес аддона), RETURN — выход; остальное не нужно
+            // мастер первого запуска: все кнопки ему (RETURN на первом шаге — диалог выхода)
+            if (WizardUI.isOpen() && !ExitDialogUI.isOpen()) {
+                if (name === 'wantsLongEnter') return false;
+                WizardUI.handleKey(name);
+                return;
+            }
+            // ждём привязки к аддону: OK — Настройки (адрес аддона; в мастере — шаг адреса), RETURN — выход
             if (PairingUI.isOpen() && !SettingsUI.isOpen() && !ExitDialogUI.isOpen()) {
                 if (name === 'wantsLongEnter') return false;
-                if (name === 'onEnter') openSettings();
+                if (name === 'onEnter') { if (firstRun) wizardBackToAddress(); else openSettings(); }
                 else if (name === 'onBack') ExitDialogUI.open();
                 else if (name === 'onGreen') fn.apply(null, arguments);
                 return;

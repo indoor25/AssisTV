@@ -773,6 +773,8 @@ let seekTarget = null;    // куда ведут бегунок на линии 
 let seekTimer = null;
 const scrub = { dir: 0, streak: 0, lastTs: 0 };
 const SCRUB_COMMIT_MS = 1500;   // бегунок отпустили — через столько перейти самим
+const VOD_END_SLACK_MS = 2 * 60 * 1000;   // «конец фильма» дальше этого от длительности — обрыв, а не конец
+const VOD_REOPEN_MAX = 3;
 
 /** VodUI onPlay: media — см. VodUI.mediaFrom, startMs — с какого места. */
 function startVod(media, startMs) {
@@ -1701,7 +1703,25 @@ async function main() {
         // архив догнал эфир (или сервер закрыл поток) — дальше смотрим вживую
         if (media && media.archive) { goLive(); return; }
         if (!media || !media.vod) return;
-        const dur = Player.getDuration();
+        const dur = Player.getDuration() || media.durationMs || 0;
+        const pos = Math.max(Player.getPosition(), media.lastPos || 0);
+        // AVPlay принимает обрыв соединения (часто после долгой паузы) за конец файла. До конца ещё далеко —
+        // это обрыв: открываем фильм заново с того же места. Три обрыва подряд без хода вперёд — сдаёмся.
+        if (dur > 0 && dur - pos > VOD_END_SLACK_MS) {
+            if (pos > (media.reopenPos || 0) + VOD_END_SLACK_MS) media.reopens = 0;
+            if ((media.reopens || 0) < VOD_REOPEN_MAX) {
+                media.reopens = (media.reopens || 0) + 1;
+                media.reopenPos = pos;
+                console.warn('[Player] фильм оборвался на ' + Math.round(pos / 1000) + ' с из ' + Math.round(dur / 1000) + ' — открываю заново');
+                VodHistory.setPosition(media.id, pos, dur);
+                Player.restart(pos);
+                return;
+            }
+            VodHistory.setPosition(media.id, pos, dur);
+            leaveVodPlayback();
+            showToast(I18n.t('vod.streamLost'), 'error', 8000);
+            return;
+        }
         VodHistory.setPosition(media.id, dur || 1, dur || 1);
         if (!vodEpisodeStep(1)) leaveVodPlayback();
     });

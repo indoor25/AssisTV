@@ -207,6 +207,7 @@
         'vod.playFailed': 'Wiedergabe nicht möglich: {error}',
         'vod.playFailedTitle': '„{title}“ konnte nicht abgespielt werden: {error}',
         'vod.episodeFailed': 'Folge konnte nicht geöffnet werden: {error}',
+        'vod.streamLost': 'Film wurde unterbrochen und ließ sich nicht wieder öffnen — bitte erneut versuchen',
 
         'mqtt.connected': 'Home Assistant (MQTT) verbunden',
         'mqtt.lost': 'MQTT: Verbindung zu {host} verloren, verbinde neu…',

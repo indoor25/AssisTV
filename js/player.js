@@ -80,6 +80,8 @@ const Player = (() => {
         }
         lastTime = time;
         lastAdvanceTs = Date.now();
+        // фильм: последнее место, до которого реально дошли, — после обрыва getCurrentTime бывает 0
+        if (current && current.vod) current.lastPos = time;
         started = true;
         // Пока AVPlay считает, что буферизует, одиночному тику не верим — ждём секунду реального хода
         if (wait.avBuffering && time - wait.avStartTime < 1000) return;
@@ -163,6 +165,8 @@ const Player = (() => {
                 // размер кадра известен только после prepare — тогда же и решаем про масштаб
                 videoInfo = readVideoSize();
                 applyScale();
+                // длительность фильма — пока поток жив; после «конца» AVPlay её уже не всегда отдаёт
+                if (current && current.vod) current.durationMs = safe('getDuration', () => webapis.avplay.getDuration()) || current.durationMs || 0;
                 if (startMs > 0) safe('seekTo', () => webapis.avplay.seekTo(startMs));
                 webapis.avplay.play();   // индикатор снимется, когда пойдёт время, см. onTime
                 emitState();
@@ -242,6 +246,7 @@ const Player = (() => {
      */
     function playVod(media, startMs = 0) {
         if (!media || !media.url) return false;
+        media.reopens = 0;   // счётчик переоткрытий после обрыва (см. onCompleted в app.js)
         playUrl(media.url, startMs);
         current = media;
         return true;
@@ -273,10 +278,14 @@ const Player = (() => {
     // Архив — скользящее окно на сервере: после паузы дольше ARCHIVE_PAUSE_MS нужных сегментов в окне уже
     // нет, и AVPlay перепрыгнул бы вперёд. Поэтому такая пауза продолжается новым открытием с того же места.
     const ARCHIVE_PAUSE_MS = 20000;
+    // Фильм: на долгой паузе сервер закрывает простаивающее соединение. AVPlay доигрывает буфер, а потом
+    // принимает обрыв за конец файла (onstreamcompleted) — фильм «заканчивался» через несколько минут
+    // после «Пуск». Поэтому после такой паузы фильм открывается заново с того же места.
+    const VOD_PAUSE_MS = 2 * 60 * 1000;
 
     function pause() {
         safe('pause', () => webapis.avplay.pause());
-        if (isArchive()) current.pausedAt = Date.now();
+        if (isArchive() || isVod()) current.pausedAt = Date.now();
         emitState();
     }
     function resume() {
@@ -284,7 +293,13 @@ const Player = (() => {
             playArchive(current.channel, getArchiveTime());
             return;
         }
-        if (isArchive()) current.pausedAt = 0;
+        if (isVod() && current.pausedAt && Date.now() - current.pausedAt > VOD_PAUSE_MS
+                && getState() === 'PAUSED') {
+            current.pausedAt = 0;
+            playUrl(current.url, getPosition() || current.lastPos || 0);
+            return;
+        }
+        if (isArchive() || isVod()) current.pausedAt = 0;
         safe('play', () => webapis.avplay.play());
         lastAdvanceTs = Date.now();   // после паузы время не шло — это не зависание
         emitState();

@@ -207,6 +207,7 @@
         'vod.playFailed': 'Could not play: {error}',
         'vod.playFailedTitle': 'Could not play “{title}”: {error}',
         'vod.episodeFailed': 'Episode failed to open: {error}',
+        'vod.streamLost': 'The movie stream dropped and could not be reopened — please try again',
 
         'mqtt.connected': 'Home Assistant (MQTT) connected',
         'mqtt.lost': 'MQTT: connection to {host} lost, reconnecting…',

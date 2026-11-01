@@ -207,6 +207,7 @@
         'vod.playFailed': 'Не удалось включить: {error}',
         'vod.playFailedTitle': 'Не удалось включить «{title}»: {error}',
         'vod.episodeFailed': 'Серия не открылась: {error}',
+        'vod.streamLost': 'Фильм оборвался и не открылся снова — попробуйте ещё раз',
 
         'mqtt.connected': 'Home Assistant (MQTT) подключён',
         'mqtt.lost': 'MQTT: связь с {host} потеряна, переподключаюсь…',

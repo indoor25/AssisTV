@@ -3,6 +3,16 @@
 Versions: the TV player (`config.xml`) and the Home Assistant add-on (`ha-addon/epg_builder/config.yaml`)
 are numbered separately.
 
+## Player 1.4.4
+
+- Player: a movie paused for a long time no longer "ends" a few minutes after Play — the server drops the
+  idle connection, and the player now reopens the movie at the same place (up to three times in a row).
+- Player 1.4.3: the "Pause" label is cleared when the TV goes to sleep.
+- Player: a `-Legacy` build for older TVs (Tizen 3, 2017): `tools/build-wgt.ps1 -Legacy`.
+- Player: MQTT keeps its connection on old TV browsers (keep-alive pings were not sent).
+- Assist scripts: each request gets its own `request_id` — two calls in one assistant reply no longer swap answers.
+- Plugins: an example source plugin for Internet Archive (public-domain classic films).
+
 ## Player 1.4.2 · Add-on 2.21.1
 
 First-run fixes, found by walking through a new TV setup:

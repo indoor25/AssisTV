@@ -20,8 +20,10 @@
 <p align="center">
   <a href="docs/screenshots/ru-home.jpg"><img src="docs/screenshots/ru-home.jpg" width="420" alt="Главный экран"></a>
   <a href="docs/screenshots/ru-list-epg.jpg"><img src="docs/screenshots/ru-list-epg.jpg" width="420" alt="Список каналов и программа"></a><br>
-  <a href="docs/screenshots/ru-info.jpg"><img src="docs/screenshots/ru-info.jpg" width="420" alt="Описание передачи (▲)"></a>
-  <a href="docs/screenshots/ru-bar.jpg"><img src="docs/screenshots/ru-bar.jpg" width="420" alt="Панель плеера (▼)"></a><br>
+  <a href="docs/screenshots/ru-menu.jpg"><img src="docs/screenshots/ru-menu.jpg" width="420" alt="Меню каналов поверх эфира"></a>
+  <a href="docs/screenshots/ru-info.jpg"><img src="docs/screenshots/ru-info.jpg" width="420" alt="Описание передачи (▲)"></a><br>
+  <a href="docs/screenshots/ru-bar.jpg"><img src="docs/screenshots/ru-bar.jpg" width="420" alt="Панель плеера (▼)"></a>
+  <a href="docs/screenshots/ru-card.jpg"><img src="docs/screenshots/ru-card.jpg" width="420" alt="Карточка на дашборде Home Assistant"></a><br>
   <a href="docs/screenshots/ru-vod.jpg"><img src="docs/screenshots/ru-vod.jpg" width="420" alt="Фильмы из плагина-источника"></a>
   <a href="docs/screenshots/ru-vod-card.jpg"><img src="docs/screenshots/ru-vod-card.jpg" width="420" alt="Карточка фильма"></a><br>
 </p>

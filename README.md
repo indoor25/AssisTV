@@ -14,6 +14,19 @@
 > подписки: вы подключаете свои источники, которыми имеете право пользоваться. Сайты, продающие
 > «подписки AssisTV», к проекту отношения не имеют.
 
+## Как это выглядит
+
+<p align="center">
+  <a href="docs/screenshots/ru-home.jpg"><img src="docs/screenshots/ru-home.jpg" width="420" alt="Главный экран"></a>
+  <a href="docs/screenshots/ru-list-epg.jpg"><img src="docs/screenshots/ru-list-epg.jpg" width="420" alt="Список каналов и программа"></a><br>
+  <a href="docs/screenshots/ru-info.jpg"><img src="docs/screenshots/ru-info.jpg" width="420" alt="Описание передачи (▲)"></a>
+  <a href="docs/screenshots/ru-bar.jpg"><img src="docs/screenshots/ru-bar.jpg" width="420" alt="Панель плеера (▼)"></a><br>
+  <a href="docs/screenshots/ru-vod.jpg"><img src="docs/screenshots/ru-vod.jpg" width="420" alt="Фильмы из плагина-источника"></a>
+  <a href="docs/screenshots/ru-vod-card.jpg"><img src="docs/screenshots/ru-vod-card.jpg" width="420" alt="Карточка фильма"></a><br>
+</p>
+
+<p align="center"><sub>Снимки со стенда: каналы — пример плейлиста, фильмы — плагин <a href="plugins/archive-org/README.md">Internet Archive</a>. Страница аддона в Home Assistant — <a href="docs/screenshots/ru-addon.jpg">здесь</a>.</sub></p>
+
 ## Зачем он нужен
 
 Готовые IPTV-плееры для Samsung (OTT Player и подобные) хорошо показывают каналы, но управлять ими

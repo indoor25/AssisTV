@@ -3,6 +3,13 @@
 Versions: the TV player (`config.xml`) and the Home Assistant add-on (`ha-addon/epg_builder/config.yaml`)
 are numbered separately.
 
+## Add-on 2.21.2
+
+- Add-on page: the playlist build time is a readable date (before: a raw ISO timestamp).
+- "Video portal" is now "movie source" on the add-on page, in the HA card and in assistant replies — any plugin can be the source.
+- Ready-made add-on images for aarch64, amd64 and armv7 are built on GitHub (GHCR).
+- Documentation site (MkDocs), screenshots, pairing and the `-Legacy` build in the docs.
+
 ## Player 1.4.4
 
 - Player: a movie paused for a long time no longer "ends" a few minutes after Play — the server drops the

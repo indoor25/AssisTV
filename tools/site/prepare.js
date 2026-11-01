@@ -16,7 +16,7 @@ const HOME = { 'README.md': 'index.md', 'README.en.md': 'en/index.md' };
 /** text — markdown файла, который на сайте лежит в OUT/<page>, а в репозитории — в ROOT/<from>. */
 function fixLinks(text, from, page) {
     const pageDir = path.posix.dirname(page);
-    return text.replace(/(\]\(|src=")([^)"\s]+)/g, (m, open, link) => {
+    return text.replace(/(\]\(|src="|href=")([^)"\s]+)/g, (m, open, link) => {
         if (/^(https?:|mailto:|#)/.test(link)) return m;
         const [file, hash] = link.split('#');
         const target = path.posix.normalize(path.posix.join(path.posix.dirname(from), file));   // от корня репозитория

@@ -2469,7 +2469,7 @@ tv_id: ${esc(t.tv_id)}</pre></details>
         const s = (status.playlists || []).find(x => x.id === p.id) || {};
         const info = p.kind === 'vod' ? tr('page.portal')
             : s.lastError ? tr('page.buildError', { error: s.lastError.message })
-                : s.lastSuccess ? tr('page.built', { matched: s.matchedChannels, total: s.playlistChannels, time: s.lastSuccess }) : tr('page.notBuilt');
+                : s.lastSuccess ? tr('page.built', { matched: s.matchedChannels, total: s.playlistChannels, time: whenLabel(s.lastSuccess) }) : tr('page.notBuilt');
         const btn = p.kind === 'tv' ? `<button class="small" onclick="IptvMapping.open(${p.id})">+ ${esc(tr('page.mapChannel'))}</button>` : '';
         return `<tr><td>${p.id}</td><td>${esc(p.name)}</td><td>${esc(tr(p.kind === 'vod' ? 'playlists.kindVod' : 'playlists.kindTv'))}</td><td>${esc(info)}</td><td>${btn}</td></tr>`;
     }).join('');

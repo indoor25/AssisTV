@@ -14,6 +14,19 @@ A custom IPTV player for Samsung (Tizen) TVs and a Home Assistant add-on that go
 > subscriptions: you connect your own sources that you have the right to use. Websites selling
 > "AssisTV subscriptions" have nothing to do with this project.
 
+## What it looks like
+
+<p align="center">
+  <a href="docs/screenshots/en-home.jpg"><img src="docs/screenshots/en-home.jpg" width="420" alt="Home screen"></a>
+  <a href="docs/screenshots/en-list-epg.jpg"><img src="docs/screenshots/en-list-epg.jpg" width="420" alt="Channel list and TV guide"></a><br>
+  <a href="docs/screenshots/en-info.jpg"><img src="docs/screenshots/en-info.jpg" width="420" alt="Programme details (▲)"></a>
+  <a href="docs/screenshots/en-bar.jpg"><img src="docs/screenshots/en-bar.jpg" width="420" alt="Player bar (▼)"></a><br>
+  <a href="docs/screenshots/en-vod.jpg"><img src="docs/screenshots/en-vod.jpg" width="420" alt="Movies from a source plugin"></a>
+  <a href="docs/screenshots/en-vod-card.jpg"><img src="docs/screenshots/en-vod-card.jpg" width="420" alt="Movie card"></a><br>
+</p>
+
+<p align="center"><sub>Shots from a test bench: channels — a sample playlist, movies — the <a href="plugins/archive-org/README.en.md">Internet Archive</a> plugin. The add-on page in Home Assistant — <a href="docs/screenshots/en-addon.jpg">here</a>.</sub></p>
+
 ## Why it exists
 
 Ready-made IPTV players for Samsung TVs (OTT Player and the like) show channels just fine, but you cannot

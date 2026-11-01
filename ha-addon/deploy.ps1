@@ -59,6 +59,9 @@ scp -P $Port -i $Key "$addon\card\tizen-iptv-card.js" "${User}@${PiHost}:${dest}
 scp -P $Port -i $Key $langFiles "${User}@${PiHost}:${dest}/shared/lang/"
 scp -P $Port -i $Key "$addon\web\mapping.js" "${User}@${PiHost}:${dest}/web/"
 scp -P $Port -i $Key (Get-ChildItem "$addon\translations\*.yaml" | ForEach-Object { $_.FullName }) "${User}@${PiHost}:${dest}/translations/"
+# config.yaml ссылается на готовые образы GHCR (image:). Локальный аддон собирается из этих файлов — иначе
+# Supervisor скачал бы опубликованный образ вместо только что скопированного кода.
+ssh @ssh "sed -i '/^image:/d' $dest/config.yaml"
 
 # Первый раз — install, дальше — rebuild (подхватывает новый код, настройки сохраняются)
 $remote = @"

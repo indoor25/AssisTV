@@ -9,6 +9,11 @@ are numbered separately.
   short "which button does what" screen. Shown while the add-on address is empty.
 - Player: Settings → **About** — version, licence, where the code is, and a QR code to support the project (Ko-fi).
 
+## Add-on 2.21.4
+
+- Home Assistant installs the add-on from ready-made images (GHCR) instead of building it on the device —
+  installation and updates take seconds, not 10–20 minutes on a Raspberry Pi.
+
 ## Add-on 2.21.3
 
 - Add-on page: links to the project and to Ko-fi at the bottom; `FUNDING.yml` for the Sponsor button on GitHub.

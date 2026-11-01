@@ -61,7 +61,7 @@ Or by hand:
 1. **Settings → Apps → Install app** → the **⋮** menu at the top right → **Repositories**.
 2. Paste `https://github.com/indoor25/AssisTV` → **Add** → **Close**.
 3. Refresh the page (⋮ → "Check for updates"), find **AssisTV** → **Install**.
-   The first installation takes a few minutes: the add-on is built right on your server.
+   Installation takes under a minute: Home Assistant downloads a ready-made image of the add-on from GitHub.
 
 > While the GitHub repository is private, Home Assistant cannot download it — use way B.
 

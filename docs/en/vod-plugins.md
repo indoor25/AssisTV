@@ -20,6 +20,11 @@ channels work as usual.
 Everything happens on the add-on page in Home Assistant: sidebar → **AssisTV** → section **"Plugins"**.
 No Samba and no restarts.
 
+> 🎬 **No source of your own? Start with the ready-made example.** The
+> [Internet Archive](../../plugins/archive-org/README.en.md) plugin shows public-domain film classics:
+> noir, 1950s sci-fi, silent films, westerns. No key needed — just the address `https://archive.org`
+> in its settings.
+
 ## Step 1. Install
 
 Two ways:

@@ -57,7 +57,8 @@ All examples with explanations are in **[docs/en/usage.md](docs/en/usage.md)**.
 **Movies and series**
 
 - **Source plugins**: your provider's video portal and others; a new source is one file — no need to
-  reinstall the app on the TV.
+  reinstall the app on the TV. A ready example with no keys —
+  [Internet Archive](plugins/archive-org/README.en.md): public-domain film classics.
 - Search, filters, "continue watching", episode, quality and audio-version selection.
 - **Kinopoisk and TMDB ratings**, genres, descriptions; **viewer reviews** on a separate screen.
 - **Favourites** shared by all TVs, all sources and the Home Assistant card.

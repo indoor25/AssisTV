@@ -48,6 +48,15 @@
         'wizard.hintSettings': 'Settings — at the top of the home screen',
         'wizard.watch': 'Watch',
 
+        'settings.about': 'About',
+        'about.version': 'Version {version}',
+        'about.text': 'Free and open-source software (GPL‑3.0). It sells no channels, movies or subscriptions — you connect your own sources.',
+        'about.source': 'Code and guides',
+        'about.support': 'Support the project',
+        'about.supportText': 'If AssisTV is useful to you, you can buy the author a coffee. Point your phone camera at the code:',
+        'about.keys': 'OK or RETURN — close',
+        'page.support': 'Support the project',
+
         'pair.title': 'Pair with Home Assistant',
         'pair.step1': 'Open the AssisTV panel in Home Assistant (sidebar).',
         'pair.step2': "Under \"Pair a TV\", confirm the request with this code:",

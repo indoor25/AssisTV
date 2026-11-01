@@ -56,6 +56,7 @@ const SettingsUI = (() => {
 
     let container = null;
     let onSave = () => {};
+    let onAbout = null;
     let getInfo = () => [];
     let inputs = {};       // key -> <input> или, для переключателей, <div class="settings-choice">
     let choiceValues = {}; // key -> текущее значение переключателя
@@ -98,6 +99,7 @@ const SettingsUI = (() => {
     function init(el, opts = {}) {
         container = el;
         onSave = opts.onSave || onSave;
+        onAbout = opts.onAbout || null;
         getInfo = opts.getInfo || getInfo;
     }
 
@@ -155,8 +157,14 @@ const SettingsUI = (() => {
         const cancelBtn = button(I18n.t('settings.cancel'), close);
         actions.appendChild(saveBtn);
         actions.appendChild(cancelBtn);
-        container.appendChild(actions);
         focusables.push(saveBtn, cancelBtn);
+        // «О программе»: версия, лицензия, QR «Поддержать проект» (js/about-ui.js)
+        if (onAbout) {
+            const aboutBtn = button(I18n.t('settings.about'), () => onAbout());
+            actions.appendChild(aboutBtn);
+            focusables.push(aboutBtn);
+        }
+        container.appendChild(actions);
 
         // справка — без фокуса, просто текст под кнопками
         const info = getInfo();

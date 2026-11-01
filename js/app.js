@@ -1765,8 +1765,10 @@ async function main() {
 
     SettingsUI.init(document.getElementById('settings-view'), {
         onSave: reloadFromSettings,
-        getInfo: settingsInfo
+        getInfo: settingsInfo,
+        onAbout: () => AboutUI.open(appVersion())
     });
+    AboutUI.init(document.getElementById('about-view'));
 
     // Register channel-change listeners before the first playChannel() call below,
     // so the OSD and the list's "now playing" marker also reflect the very first channel.
@@ -2046,6 +2048,12 @@ async function main() {
             if (WizardUI.isOpen() && !ExitDialogUI.isOpen()) {
                 if (name === 'wantsLongEnter') return false;
                 WizardUI.handleKey(name);
+                return;
+            }
+            // «О программе» поверх Настроек: OK или RETURN — закрыть, остальное не нужно
+            if (AboutUI.isOpen()) {
+                if (name === 'wantsLongEnter') return false;
+                if (name === 'onEnter' || name === 'onBack') AboutUI.close();
                 return;
             }
             // ждём привязки к аддону: OK — Настройки (адрес аддона; в мастере — шаг адреса), RETURN — выход

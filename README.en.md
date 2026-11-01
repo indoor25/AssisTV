@@ -2,6 +2,7 @@
 <p align="center">
   <a href="https://github.com/indoor25/AssisTV/actions/workflows/checks.yml"><img src="https://github.com/indoor25/AssisTV/actions/workflows/checks.yml/badge.svg" alt="Checks"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0"></a>
+  <a href="https://ko-fi.com/indoor25"><img src="https://img.shields.io/badge/Ko--fi-support-ff5e5b?logo=ko-fi&logoColor=white" alt="Ko-fi"></a>
 </p>
 
 # AssisTV — IPTV player for Samsung TVs, controlled from Home Assistant
@@ -165,6 +166,12 @@ After that:
 | `lang/` | interface translations (ru, en, uk, de) and how to add a language |
 | `docs/`, `docs/en/` | guides in Russian and in English |
 | `tools/` | building the TV package (`build-wgt.ps1`) and checks that need no TV: channel search, TV guide, movie sources, translations |
+
+## Support the project
+
+AssisTV is free and will stay free. If it is useful to you, you can buy the author a coffee at
+**[ko-fi.com/indoor25](https://ko-fi.com/indoor25)** — the same QR code is on the TV: Settings → **About**.
+Bug reports and ideas in [Issues](https://github.com/indoor25/AssisTV/issues) help just as much.
 
 ## Passwords and personal data
 

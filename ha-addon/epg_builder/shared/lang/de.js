@@ -48,6 +48,15 @@
         'wizard.hintSettings': 'Einstellungen — oben auf dem Startbildschirm',
         'wizard.watch': 'Ansehen',
 
+        'settings.about': 'Über AssisTV',
+        'about.version': 'Version {version}',
+        'about.text': 'Kostenlose Open-Source-Software (GPL‑3.0). Sie verkauft keine Sender, Filme oder Abos — Sie verbinden Ihre eigenen Quellen.',
+        'about.source': 'Code und Anleitungen',
+        'about.support': 'Projekt unterstützen',
+        'about.supportText': 'Wenn AssisTV Ihnen nützt, können Sie dem Autor einen Kaffee spendieren. Richten Sie die Handykamera auf den Code:',
+        'about.keys': 'OK oder RETURN — schließen',
+        'page.support': 'Projekt unterstützen',
+
         'pair.title': 'Mit Home Assistant koppeln',
         'pair.step1': 'Öffnen Sie in Home Assistant das AssisTV-Panel (Seitenleiste).',
         'pair.step2': 'Bestätigen Sie unter „Fernseher koppeln“ die Anfrage mit diesem Code:',

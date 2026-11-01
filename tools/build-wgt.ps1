@@ -25,7 +25,7 @@ $stage = Join-Path ([IO.Path]::GetTempPath()) ('tizen-wgt-' + [Guid]::NewGuid().
 New-Item -ItemType Directory $stage | Out-Null
 try {
     foreach ($f in 'config.xml', 'index.html', 'icon.png') { Copy-Item (Join-Path $root $f) $stage }
-    foreach ($d in 'css', 'js', 'libs', 'lang') { Copy-Item -Recurse (Join-Path $root $d) $stage }
+    foreach ($d in 'css', 'js', 'libs', 'lang', 'images') { Copy-Item -Recurse (Join-Path $root $d) $stage }
     if ($Defaults) {
         Copy-Item (Resolve-Path $Defaults) (Join-Path $stage 'js\local-defaults.js') -Force
         Write-Host "умолчания: $Defaults"

@@ -7,6 +7,7 @@ are numbered separately.
 
 - Player: a first-start wizard — language, the add-on address (checked right away), the pairing code, and a
   short "which button does what" screen. Shown while the add-on address is empty.
+- Player: Settings → **About** — version, licence, where the code is, and a QR code to support the project (Ko-fi).
 
 ## Add-on 2.21.2
 
@@ -14,6 +15,7 @@ are numbered separately.
 - "Video portal" is now "movie source" on the add-on page, in the HA card and in assistant replies — any plugin can be the source.
 - Ready-made add-on images for aarch64, amd64 and armv7 are built on GitHub (GHCR).
 - Documentation site (MkDocs), screenshots, pairing and the `-Legacy` build in the docs.
+- Add-on page: links to the project and to Ko-fi at the bottom; `FUNDING.yml` for the Sponsor button on GitHub.
 
 ## Player 1.4.4
 

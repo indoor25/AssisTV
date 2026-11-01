@@ -1239,6 +1239,9 @@ function tvError(found, tvQuery) {
 }
 
 /** ISO-время для страницы: «30 окт., 19:08» на языке аддона; нет или битое — «—». */
+// внизу страницы аддона: где код и как поддержать проект
+const PROJECT_URL = 'https://github.com/indoor25/AssisTV';
+const SUPPORT_URL = 'https://ko-fi.com/indoor25';
 const whenLabel = iso => {
     const d = new Date(iso || NaN);
     return isNaN(d) ? '—' : d.toLocaleString(I18n.locale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: process.env.TZ || undefined });
@@ -2606,6 +2609,8 @@ body.mp-open{overflow:hidden}.mp-back[hidden]{display:none}
 <div id="manual-map" class="muted">${esc(tr('common.loading'))}</div>
 <script>window.IPTV_I18N = ${JSON.stringify(mappingTexts()).replace(/</g, '\\u003c')};</script>
 <script src="mapping.js"></script>
+<p class="muted" style="margin-top:40px">AssisTV · <a href="${PROJECT_URL}" target="_blank" rel="noopener">GitHub</a> ·
+<a href="${SUPPORT_URL}" target="_blank" rel="noopener">☕ ${esc(tr('page.support'))}</a></p>
 </body></html>`;
 }
 

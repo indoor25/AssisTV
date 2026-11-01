@@ -9,13 +9,17 @@ are numbered separately.
   short "which button does what" screen. Shown while the add-on address is empty.
 - Player: Settings → **About** — version, licence, where the code is, and a QR code to support the project (Ko-fi).
 
+## Add-on 2.21.3
+
+- Add-on page: links to the project and to Ko-fi at the bottom; `FUNDING.yml` for the Sponsor button on GitHub.
+- `libs/THIRD_PARTY_NOTICES.md` — the MQTT.js licence for the bundled library.
+
 ## Add-on 2.21.2
 
 - Add-on page: the playlist build time is a readable date (before: a raw ISO timestamp).
 - "Video portal" is now "movie source" on the add-on page, in the HA card and in assistant replies — any plugin can be the source.
 - Ready-made add-on images for aarch64, amd64 and armv7 are built on GitHub (GHCR).
 - Documentation site (MkDocs), screenshots, pairing and the `-Legacy` build in the docs.
-- Add-on page: links to the project and to Ko-fi at the bottom; `FUNDING.yml` for the Sponsor button on GitHub.
 
 ## Player 1.4.4
 

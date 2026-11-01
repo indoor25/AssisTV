@@ -2,7 +2,8 @@ name: Add-on images
 
 # Ready-made add-on images on GHCR, so Home Assistant installs the add-on without building it on the device.
 # One image per architecture (Home Assistant pulls ghcr.io/<owner>/assistv-<arch>:<version>).
-# A version is built once: if its tag already exists, the job does nothing.
+# A version is built once: if its tag already exists, the job does nothing. The image carries the git tree of the
+# add-on folder (label io.assistv.tree): if the add-on changed but its version did not, the job fails — bump the version.
 
 on:
   push:
@@ -37,6 +38,7 @@ jobs:
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "image=ghcr.io/$owner/assistv-${{ matrix.arch }}" >> "$GITHUB_OUTPUT"
+          echo "tree=$(git rev-parse HEAD:ha-addon/epg_builder)" >> "$GITHUB_OUTPUT"
 
       - uses: docker/login-action@v3
         with:
@@ -47,7 +49,13 @@ jobs:
       - name: Already built?
         id: exists
         run: |
-          if docker manifest inspect "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}" > /dev/null 2>&1; then
+          ref="${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}"
+          if info=$(skopeo inspect --creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" "docker://$ref" 2>/dev/null); then
+            built=$(echo "$info" | jq -r '.Labels["io.assistv.tree"] // ""')
+            if [ -n "$built" ] && [ "$built" != "${{ steps.meta.outputs.tree }}" ]; then
+              echo "::error::The add-on changed, but version ${{ steps.meta.outputs.version }} is already published. Bump version in ha-addon/epg_builder/config.yaml."
+              exit 1
+            fi
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "Image ${{ steps.meta.outputs.version }} for ${{ matrix.arch }} already exists"
           fi
@@ -71,5 +79,6 @@ jobs:
             io.hass.type=addon
             io.hass.arch=${{ matrix.arch }}
             io.hass.version=${{ steps.meta.outputs.version }}
+            io.assistv.tree=${{ steps.meta.outputs.tree }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.licenses=GPL-3.0-only

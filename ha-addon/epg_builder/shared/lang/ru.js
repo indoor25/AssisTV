@@ -568,6 +568,7 @@
         'suggest.series': 'Сериал',
         'suggest.noDesc': 'Описания нет',
         'card.archive': 'Архив',
+        'card.channels': 'Каналы',
         'card.archBack': 'Назад на минуту',
         'card.archFwd': 'Вперёд на минуту',
         'card.fromStart': 'Включаю передачу с начала',

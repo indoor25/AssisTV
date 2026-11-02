@@ -1,5 +1,5 @@
 name: AssisTV
-version: "2.21.4"
+version: "2.21.5"
 slug: epg_builder
 # описание и названия опций на других языках — translations/*.yaml
 description: IPTV player for Samsung Tizen TVs with voice control — playlists, TV guide, movies and TVs

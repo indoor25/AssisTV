@@ -3,6 +3,11 @@
 Versions: the TV player (`config.xml`) and the Home Assistant add-on (`ha-addon/epg_builder/config.yaml`)
 are numbered separately.
 
+## Add-on 2.21.5
+
+- HA card: `collapse_channels: true` folds the channel list under a "Channels" row (closed on load, opens with a tap);
+  the player then takes the full card width. Handy when the card shares a dashboard with other cards.
+
 ## Player 1.4.5
 
 - Player: a first-start wizard — language, the add-on address (checked right away), the pairing code, and a

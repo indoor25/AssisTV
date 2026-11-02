@@ -29,6 +29,7 @@ If you prefer YAML:
 type: custom:tizen-iptv-card
 tv_id: qe55qn85c_xxxx      # the TV's identifier — on the AssisTV page in the HA sidebar
 title: Bedroom             # optional
+collapse_channels: true    # optional: the channel list is folded under a "Channels" row
 ```
 
 The card is large (group strips and channel tiles); it looks best on a separate dashboard view of the

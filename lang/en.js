@@ -568,6 +568,7 @@
         'suggest.series': 'Series',
         'suggest.noDesc': 'No description',
         'card.archive': 'Archive',
+        'card.channels': 'Channels',
         'card.archBack': 'Back one minute',
         'card.archFwd': 'Forward one minute',
         'card.fromStart': 'Playing the programme from the start',

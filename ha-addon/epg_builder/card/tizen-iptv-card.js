@@ -8,6 +8,8 @@
  *                                                     # для этого TV на странице аддона
  *   state_entity: sensor.iptv_<tv_id>_playback        # необязательно, по умолчанию — от tv_id
  *   data_url: /local/tizen-iptv/channels-<tv_id>.json # необязательно, по умолчанию — от tv_id
+ *   collapse_channels: true                           # необязательно: список каналов свёрнут под строкой «Каналы»,
+ *                                                     # плеер — во всю ширину; раскрывается нажатием
  *
  * Новый телевизор: Изменить дашборд → Добавить карточку → «AssisTV» → выбрать TV в списке
  * (визуальный редактор ниже, список берётся из /local/tizen-iptv/tvs.json, его пишет аддон).
@@ -241,6 +243,28 @@
     .episodes button { padding: 5px 10px; border-radius: 8px; font-size: 13px; background: var(--card-background-color, #fff); border: 1px solid var(--divider-color, rgba(0,0,0,.12)); }
     .episodes button:hover { border-color: var(--primary-color); }
     @media (max-width: 520px) { .vod-detail { flex-direction: column; } .vod-detail .d-pic { width: 120px; } }
+
+    /* collapse_channels: список под строкой «Каналы»; раскрытие — анимация высоты через grid 0fr → 1fr */
+    .fold { min-width: 0; flex: 1; }
+    .fold-head { display: none; }
+    .foldable .layout, .foldable.wide .layout { flex-direction: column; align-items: stretch; }
+    .foldable.wide .player { width: auto; position: relative; top: 0; }
+    .foldable .fold { border-radius: 16px; background: var(--secondary-background-color, #f5f5f5); }
+    .foldable .fold-head { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 54px; padding: 0 14px; box-sizing: border-box; text-align: left; }
+    .fold-head .fold-icon { width: 34px; height: 34px; flex: none; border-radius: 11px; display: grid; place-items: center;
+        background: color-mix(in srgb, var(--primary-color) 22%, transparent); color: var(--primary-color); }
+    .fold-head .fold-icon ha-icon { --mdc-icon-size: 20px; }
+    .fold-head .fold-name { font-size: 15px; font-weight: 600; }
+    .fold-head .fold-count { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; color: var(--secondary-text-color);
+        background: var(--card-background-color, #fff); font-variant-numeric: tabular-nums; }
+    .fold-head .fold-now { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--secondary-text-color); text-align: right; }
+    .fold-head .fold-chev { flex: none; color: var(--secondary-text-color); transition: transform .3s ease; }
+    .fold.open .fold-chev { transform: rotate(180deg); }
+    .foldable .fold-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .35s ease; }
+    .foldable .fold.open .fold-body { grid-template-rows: 1fr; }
+    .foldable .fold-inner { min-height: 0; overflow: hidden; }
+    .foldable .guide { padding: 0 12px 12px; opacity: 0; transition: opacity .25s ease; }
+    .foldable .fold.open .guide { opacity: 1; }
     `;
 
     class TizenIptvCard extends HTMLElement {
@@ -267,6 +291,7 @@
             this._topic = 'iptv/' + tvId;
             if (this.shadowRoot && this._started) this._loadData();
             if (!this.shadowRoot) this._build();
+            else this._card.classList.toggle('foldable', !!this._config.collapse_channels);
             if (this.isConnected && !this._started) this.connectedCallback();
         }
 
@@ -368,6 +393,13 @@
                   </details>
                   <div class="toast" id="toast" hidden></div>
                 </div>
+                <div class="fold" id="fold">
+                <button class="fold-head" id="foldHead" aria-expanded="false">
+                  <span class="fold-icon"><ha-icon icon="mdi:format-list-bulleted-square"></ha-icon></span>
+                  <span class="fold-name">${esc(_t('card.channels'))}</span><span class="fold-count" id="foldCount" hidden></span>
+                  <span class="fold-now" id="foldNow"></span><ha-icon class="fold-chev" icon="mdi:chevron-down"></ha-icon>
+                </button>
+                <div class="fold-body"><div class="fold-inner">
                 <div class="guide">
                   <div class="playlists" id="playlists" hidden></div>
                   <div id="tvGuide" class="vod">
@@ -403,9 +435,13 @@
                     <div class="empty" id="vodMsg">${esc(_t('card.vodIntro'))}</div>
                   </div>
                 </div>
+                </div></div>
+                </div>
               </div>
             </ha-card>`;
             this._card = this.$('card');
+            this._card.classList.toggle('foldable', !!this._config.collapse_channels);
+            this.$('foldHead').addEventListener('click', () => this._toggleFold());
 
             root.addEventListener('click', (e) => {
                 const poster = e.target.closest('[data-vodid]');
@@ -1275,6 +1311,8 @@
                 // media_player мог прийти только с данными — переоценить питание
                 if (this._hass && !this._config.tv_entity) { this._lastTv = undefined; this.hass = this._hass; }
                 this._loadedAt = Date.now();
+                this.$('foldCount').textContent = data.channels.length;
+                this.$('foldCount').hidden = !data.channels.length;
                 // группы как на TV (ChannelStore.groupsOf): в конце «Без группы» (если есть) и всегда «Все каналы»;
                 // в плейлисте без групп — только «Все каналы»
                 this._groups = [];
@@ -1324,8 +1362,27 @@
             this.$('chips').innerHTML = this._groups.map(g =>
                 `<button data-group="${esc(g)}" class="${!q && g === this._group ? 'active' : ''}">${lock(g)}${esc(groupLabel(g))}<small>${this._groupCounts.get(g)}</small></button>`
             ).join('');
+            this.$('foldNow').textContent = q ? '' : groupLabel(this._group);
+            // в свёрнутом списке не прокручивать: scrollIntoView сдвинул бы страницу к карточке
+            if (this._card.classList.contains('foldable') && !this.$('fold').classList.contains('open')) return;
             const active = this.$('chips').querySelector('.active');
             if (active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest', inline: 'center' });
+        }
+
+        /** collapse_channels: раскрыть/свернуть список; при раскрытии — догрузка плиток и активная группа в виду. */
+        _toggleFold() {
+            const fold = this.$('fold');
+            const open = !fold.classList.contains('open');
+            fold.classList.toggle('open', open);
+            this.$('foldHead').setAttribute('aria-expanded', String(open));
+            if (!open) return;
+            if (this._io) {
+                const s = this.$('sentinel');
+                this._io.unobserve(s);
+                this._io.observe(s);
+            }
+            const active = this.$('chips').querySelector('.active');
+            if (active) this.$('chips').scrollLeft = active.offsetLeft - (this.$('chips').clientWidth - active.offsetWidth) / 2;
         }
 
         /** Индексы каналов для показа: группа или результаты поиска. */

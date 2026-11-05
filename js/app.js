@@ -54,6 +54,7 @@ function applySettings() {
     CONFIG.mqtt = Object.assign({}, CONFIG_DEFAULTS.mqtt, own ? {} : nonEmpty(addonReg && addonReg.mqtt), s.mqtt);
     AddonClient.setAddonUrl(CONFIG.addonUrl);    // фильмы: плагины выполняет аддон (js/vod-client.js)
     VodFavorites.setAddonUrl(CONFIG.addonUrl);   // избранное видеопортала лежит в аддоне, общее на все TV
+    VodWatchlist.setAddonUrl(CONFIG.addonUrl);   // «Посмотреть позже» — тоже
     VodUI.setAddonUrl(CONFIG.addonUrl);          // рейтинги и рецензии аддон тоже берёт на себя
 }
 

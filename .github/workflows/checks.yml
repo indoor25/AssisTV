@@ -25,6 +25,8 @@ jobs:
         run: node tools/guide-test.js
       - name: Movie sources and plugins
         run: node tools/vod-sources-test.js
+      - name: Watch later
+        run: node tools/watchlist-test.js
       - name: Translations
         run: node tools/i18n-check.js
       - name: Shared files are in sync with the add-on

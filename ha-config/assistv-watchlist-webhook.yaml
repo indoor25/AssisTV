@@ -1,0 +1,43 @@
+# «Посмотреть позже» с телефона / "Watch later" from a phone (docs/usage.md, docs/en/usage.md).
+#
+# Телефон (приложение android/ «AssisTV: На TV» или HTTP Shortcuts) шлёт POST на https://<ваш HA>/api/webhook/<webhook_id>
+# с JSON {"text": "…", "clip": "…"}: text — то, чем поделились, clip — буфер обмена (если поделиться нечем).
+# Аддон добавляет фильм в «Посмотреть позже», ответ приходит пушем в приложение Home Assistant.
+#
+# Добавить: Настройки → Автоматизации → «+» → ⋮ → «Редактировать в YAML», вставить, сохранить.
+# Нужен скрипт iptv_zapros из iptv-assist-scripts.yaml.
+#
+# webhook_id — это пароль адреса: придумайте длинный случайный (например, 24+ букв и цифр) и никому не
+# показывайте. local_only: false — чтобы работало и вне дома (через Nabu Casa или свой туннель).
+#
+# Ответ — на телефон того, кто отправил: в адрес на его телефоне допишите ?to=<имя из списка phones>
+# (…/api/webhook/<webhook_id>?to=anna). Без ?to= или с чужим именем — на первый телефон списка.
+alias: "AssisTV: Watch later from the phone"
+description: The phone shares a title or a link; the add-on adds the movie to "Watch later" and answers with a push.
+mode: parallel
+triggers:
+  - trigger: webhook
+    webhook_id: CHANGE-ME-long-random-string
+    allowed_methods: [POST]
+    local_only: false
+actions:
+  - variables:
+      j: "{{ trigger.json if trigger.json is defined and trigger.json is mapping else {} }}"
+      text: "{{ (j.get('text') or j.get('clip') or '') | trim }}"
+      # имя → телефон в приложении HA (notify.mobile_app_<имя устройства>); первый — по умолчанию
+      phones:
+        me: notify.mobile_app_my_phone
+        anna: notify.mobile_app_anna_phone
+      to: "{{ (trigger.query.to if trigger.query is defined else '') | lower }}"
+      notify: "{{ phones[to] if to in phones else (phones.values() | first) }}"
+  - action: script.iptv_zapros
+    data:
+      request:
+        action: watchlist_add
+        text: "{{ text }}"
+        by: phone
+    response_variable: r
+  - action: "{{ notify }}"
+    data:
+      title: AssisTV
+      message: "{{ r.message }}"

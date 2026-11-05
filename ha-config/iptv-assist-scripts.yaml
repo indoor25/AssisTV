@@ -334,6 +334,34 @@ iptv_favorite_movie:
     - stop: ""
       response_variable: result
 
+iptv_watchlist_add:
+  alias: "IPTV: add to Watch later"
+  description: >-
+    Adds a movie or series to the "Watch later" list of the IPTV player — for "add … to watch later", "remind me
+    to watch …", "save the film … for later". text — the title as the user said it (a year may be included). The
+    movie does not have to be available yet: the add-on finds it on Kinopoisk and looks for it in all movie
+    sources every day. Result: message — retell it in one short sentence.
+  icon: mdi:clock-plus-outline
+  mode: parallel
+  fields:
+    text:
+      name: Title
+      description: Movie or series title, optionally with the year.
+      example: Dune 2021
+      required: true
+      selector:
+        text: {}
+  sequence:
+    - action: script.iptv_zapros
+      data:
+        request:
+          action: watchlist_add
+          text: "{{ text }}"
+          by: voice
+      response_variable: result
+    - stop: ""
+      response_variable: result
+
 iptv_player_control:
   alias: "IPTV: player control"
   description: >-

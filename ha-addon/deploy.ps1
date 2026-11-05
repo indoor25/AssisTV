@@ -50,7 +50,7 @@ ssh @ssh "rm -rf $dest && mkdir -p $dest/shared/lang $dest/card $dest/web $dest/
 scp -P $Port -i $Key -o StrictHostKeyChecking=accept-new `
     "$addon\config.yaml" "$addon\Dockerfile" "$addon\package.json" "$addon\build.js" "$addon\server.js" `
     "$addon\card-data.js" "$addon\vod.js" "$addon\tmdb.js" "$addon\kinopoisk.js" "$addon\archive.js" "$addon\parental.js" `
-    "$addon\favorites.js" "$addon\plugins.js" "$addon\guide.js" "$addon\history.js" "$addon\pairing.js" "$addon\mqtt-proxy.js" "$addon\sandbox.js" "$addon\plugin-host.js" "$addon\DOCS.md" `
+    "$addon\favorites.js" "$addon\watchlist.js" "$addon\plugins.js" "$addon\guide.js" "$addon\history.js" "$addon\pairing.js" "$addon\mqtt-proxy.js" "$addon\sandbox.js" "$addon\plugin-host.js" "$addon\DOCS.md" `
     "$addon\icon.png" "$addon\logo.png" `
     "${User}@${PiHost}:${dest}/"
 scp -P $Port -i $Key ($sharedFiles | ForEach-Object { Join-Path $shared $_ }) `
@@ -65,7 +65,9 @@ ssh @ssh "sed -i '/^image:/d' $dest/config.yaml"
 
 # Первый раз — install, дальше — rebuild (подхватывает новый код, настройки сохраняются)
 $remote = @"
-ha store reload >/dev/null 2>&1 || ha apps reload
+# 03.11.2026: store reload проходит успешно, но новую version локального аддона не видит — нужен ещё apps reload
+ha store reload >/dev/null 2>&1
+ha apps reload >/dev/null 2>&1
 if ha apps info $slug 2>/dev/null | grep -qE '^state: (started|stopped|error)'; then
     # поменялась version в config.yaml — rebuild откажет, нужен update
     if ha apps info $slug | grep -q '^update_available: true'; then

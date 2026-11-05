@@ -160,6 +160,55 @@ function createKinopoisk({ getKey, file, log }) {
         return best && best.s >= MIN_SCORE ? best.f : null;
     }
 
+    /** Карточка фильма из ответа /films/{id} (full) и/или строки поиска (f) — одна форма для enrich и film. */
+    function card(id, full, f) {
+        f = f || {};
+        const rating = full ? parseRating(full.ratingKinopoisk) : parseRating(f.rating);
+        const votes = (full ? full.ratingKinopoiskVoteCount : f.ratingVoteCount) || 0;
+        const genres = ((full && full.genres) || f.genres || []).map(g => g && g.genre).filter(Boolean);
+        return {
+            id,
+            kind: (full ? (full.serial || SERIES_TYPES[full.type]) : SERIES_TYPES[f.type]) ? 'series' : 'movie',
+            title: (full && (full.nameRu || full.nameOriginal)) || f.nameRu || f.nameEn || '',
+            originalTitle: (full && (full.nameOriginal || full.nameEn)) || f.nameEn || '',
+            year: (full && full.year) || yearOf(f.year),
+            rating: rating && votes >= MIN_VOTES ? rating : null,
+            votes,
+            imdbRating: full ? parseRating(full.ratingImdb) : null,
+            genres,
+            description: cleanText(full ? (full.description || full.shortDescription) : ''),
+            reviews: (full && full.reviewsCount) || 0,
+            poster: (full && full.posterUrl) || f.posterUrl || null,
+            posterPreview: (full && full.posterUrlPreview) || f.posterUrlPreview || null,
+            url: (full && full.webUrl) || `https://www.kinopoisk.ru/film/${id}/`
+        };
+    }
+
+    /** Фильм по номеру Кинопоиска (ссылка kinopoisk.ru/film/123) → то же, что enrich, или null. */
+    async function film(id) {
+        id = parseInt(id, 10);
+        if (!enabled() || !(id > 0)) return null;
+        try {
+            return card(id, await get(`/api/v2.2/films/${id}`, {}));
+        } catch (e) {
+            log(`Кинопоиск: фильм ${id}: ${e.message}`);
+            return null;
+        }
+    }
+
+    /** Фильм по ссылке IMDb (tt0133093) → то же, что enrich, или null. */
+    async function byImdb(imdbId) {
+        if (!enabled() || !/^tt\d+$/.test(String(imdbId || ''))) return null;
+        try {
+            const d = await get('/api/v2.2/films', { imdbId });
+            const f = d && d.items && d.items[0];
+            return f && f.kinopoiskId ? film(f.kinopoiskId) : null;
+        } catch (e) {
+            log(`Кинопоиск: IMDb ${imdbId}: ${e.message}`);
+            return null;
+        }
+    }
+
     /**
      * Метаданные по названию и году → {id, kind, rating, votes, imdbRating, genres, description,
      * reviews, year, title, poster, url} или null. title должен быть очищен (vod.cleanTitle).
@@ -182,23 +231,7 @@ function createKinopoisk({ getKey, file, log }) {
                     log(`Кинопоиск: карточка ${id}: ${e.message}`);
                     return null;
                 });
-                const rating = full ? parseRating(full.ratingKinopoisk) : parseRating(f.rating);
-                const votes = (full ? full.ratingKinopoiskVoteCount : f.ratingVoteCount) || 0;
-                const genres = ((full && full.genres) || f.genres || []).map(g => g && g.genre).filter(Boolean);
-                data = {
-                    id,
-                    kind: (full ? (full.serial || SERIES_TYPES[full.type]) : SERIES_TYPES[f.type]) ? 'series' : 'movie',
-                    title: (full && (full.nameRu || full.nameOriginal)) || f.nameRu || f.nameEn || '',
-                    year: (full && full.year) || yearOf(f.year),
-                    rating: rating && votes >= MIN_VOTES ? rating : null,
-                    votes,
-                    imdbRating: full ? parseRating(full.ratingImdb) : null,
-                    genres,
-                    description: cleanText(full ? (full.description || full.shortDescription) : ''),
-                    reviews: (full && full.reviewsCount) || 0,
-                    poster: (full && full.posterUrl) || f.posterUrl || null,
-                    url: (full && full.webUrl) || `https://www.kinopoisk.ru/film/${id}/`
-                };
+                data = card(id, full, f);
             }
         } catch (e) {
             log(`Кинопоиск: «${title}»: ${e.message}`);
@@ -268,7 +301,7 @@ function createKinopoisk({ getKey, file, log }) {
         }
     }
 
-    return { enabled, enrich, reviews, quota, MIN_SCORE };
+    return { enabled, enrich, film, byImdb, reviews, quota, MIN_SCORE };
 }
 
 module.exports = { createKinopoisk, cleanText, parseRating, yearOf };

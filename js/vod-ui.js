@@ -63,6 +63,7 @@ const VodUI = (() => {
     let details = null;           // {item, full, episodes, loading, error, zone, btnIdx, epIdx, epFirstRow, quality}
     let picker = null;            // {title, options:[label], focus, onPick}
     let favGen = 0;               // избранное поменялось — новый ключ кеша плиток ленты
+    let watchGen = 0;             // то же для «Посмотреть позже»
     let addonUrl = '';            // рейтинги TMDB спрашиваются у аддона (портал их не отдаёт)
     let recentSearches = [];
 
@@ -133,6 +134,7 @@ const VodUI = (() => {
         render();
         // список общий на все телевизоры — на втором его могли поменять, пока портал был закрыт
         VodFavorites.refresh().then(refreshFavRow);
+        VodWatchlist.refresh().then(refreshWatchRow);
     }
 
     /** Показать снова (после просмотра) — на том же месте, с открытой карточкой. */
@@ -174,14 +176,16 @@ const VodUI = (() => {
             const r = await client.root();
             if (my !== token) return;
             root = r;
-            // избранное — всегда первой лентой, даже пустое: иначе о нём никто не узнает
-            rows = [favRow()].concat(r.categories.map((c, i) => ({
+            // избранное — всегда, даже пустое: иначе о нём никто не узнает; «Посмотреть позже» — только непустое
+            // (наполняется с телефона и голосом, пустая лента на экране только мешает — просьба пользователя)
+            const watch = VodWatchlist.list().length ? [watchRow()] : [];
+            rows = watch.concat([favRow()]).concat(r.categories.map((c, i) => ({
                 title: c.title, request: c.request, cacheKey: 'r' + i, items: [], count: null,
                 previewLimit: c.previewLimit || 0, nextRequest: null,
                 loading: true, error: null, focusCol: 0, firstCol: 0
             })));
             render();
-            rows.filter(row => !row.favorites).forEach(row => loadRow(row, my));
+            rows.filter(row => !row.favorites && !row.watch).forEach(row => loadRow(row, my));
         } catch (e) {
             if (my !== token) return;
             rootError = e.message || String(e);
@@ -221,6 +225,7 @@ const VodUI = (() => {
     /** Плитка «Все» в конце ленты. */
     function openRowAll(row) {
         if (row.favorites) return openList('favorites', row.title, null, VodFavorites.asItems());
+        if (row.watch) return openList('watch', row.title, null, VodWatchlist.asItems());
         if (row.items.length) {
             list = {
                 kind: 'category', title: row.title, request: null, items: row.items.slice(),
@@ -235,8 +240,14 @@ const VodUI = (() => {
         return openList('category', row.title, row.request);
     }
 
+    /**
+     * Плитки ленты на главной: не больше ROW_PREVIEW (просьба пользователя — «штук 10, а затем Все»),
+     * остальное — по плитке «Все» (openRowAll берёт полный row.items).
+     */
+    const ROW_PREVIEW = 10;
     function rowItems(row) {
-        return row.previewLimit ? row.items.slice(0, row.previewLimit) : row.items;
+        const limit = row.previewLimit ? Math.min(row.previewLimit, ROW_PREVIEW) : ROW_PREVIEW;
+        return row.items.length > limit ? row.items.slice(0, limit) : row.items;
     }
 
     // ───────────────────────── избранное ─────────────────────────
@@ -257,6 +268,97 @@ const VodUI = (() => {
         row.cacheKey = 'fav' + (++favGen);
         row.focusCol = Math.max(0, Math.min(row.focusCol, row.items.length));
         if (isOpen() && screen === 'main') renderBody();
+    }
+
+    // ───────────────────────── «Посмотреть позже» ─────────────────────────
+
+    function watchRow() {
+        return {
+            title: I18n.t('vod.watchlist'), request: null, watch: true, cacheKey: 'wl' + watchGen,
+            items: VodWatchlist.asItems(), count: null, loading: false, error: null, focusCol: 0, firstCol: 0
+        };
+    }
+
+    function refreshWatchRow() {
+        let row = rows.find(r => r.watch);
+        const items = VodWatchlist.asItems();
+        if (root && !row !== !items.length) {
+            // лента появляется / исчезает целиком; фокус остаётся на той же ленте
+            if (row) {
+                rows.shift();
+                if (rowIdx > 0) rowIdx--;
+                if (firstRow > 0) firstRow--;
+                row = null;
+            } else {
+                row = watchRow();
+                rows.unshift(row);
+                if (zone === 'body') rowIdx++;
+            }
+        }
+        if (row) {
+            row.items = items;
+            row.cacheKey = 'wl' + (++watchGen);
+            row.focusCol = Math.max(0, Math.min(row.focusCol, row.items.length));
+        }
+        if (list && list.kind === 'watch') {
+            list.items = VodWatchlist.asItems();
+            list.count = list.items.length;
+            list.gen = ++listGen;
+        }
+        if (isOpen() && !details) renderBody();
+    }
+
+    /** Запись «Посмотреть позже», к которой относится карточка: открыли из ленты или тот же фильм из каталога. */
+    function watchEntryOf(d) {
+        if (d.item.wl) return VodWatchlist.find(d.item.wl);
+        const fid = d.item.fid != null ? d.item.fid : d.full.fid;
+        return fid != null ? VodWatchlist.findById(idOf(fid)) : null;
+    }
+
+    /** Фильма нет ни у одного источника: карточка из того, что известно от Кинопоиска, без «Смотреть». */
+    function openMissing(item) {
+        details = {
+            item, full: item, episodes: [], loading: false, error: null, missing: true,
+            zone: 'buttons', btnIdx: 0, epIdx: 0, epFirstRow: 0, meta: item.kp || {}
+        };
+        render();
+    }
+
+    async function removeWatch(d, entry) {
+        if (d.wlBusy) return;
+        d.wlBusy = true;
+        d.wlMsg = null;
+        renderDetails();
+        try {
+            await VodWatchlist.remove(entry.key);
+            d.wlBusy = false;
+            refreshWatchRow();
+            // ненайденное без записи открывать нечем — карточка закрывается; фильм из источника остаётся
+            if (d.missing) return closeDetails();
+        } catch (e) {
+            d.wlBusy = false;
+            d.wlMsg = I18n.t('vod.watchFailed', { error: e.message || String(e) });
+        }
+        if (details === d) renderDetails();
+    }
+
+    async function recheckWatch(d, entry) {
+        if (d.wlBusy) return;
+        d.wlBusy = true;
+        d.wlMsg = null;
+        renderDetails();
+        try {
+            const it = await VodWatchlist.recheck(entry.key);
+            d.wlBusy = false;
+            refreshWatchRow();
+            if (details !== d) return;
+            if (it && it.found) return openItem(VodWatchlist.asItem(it));
+            d.wlMsg = I18n.t('vod.watchStillMissing');
+        } catch (e) {
+            d.wlBusy = false;
+            d.wlMsg = I18n.t('vod.watchFailed', { error: e.message || String(e) });
+        }
+        if (details === d) renderDetails();
     }
 
     /** Кнопка «В избранное» на карточке. Список живёт в аддоне — без него не изменить. */
@@ -425,7 +527,7 @@ const VodUI = (() => {
             strip.className = 'vod-strip';
             if (row.loading) message(strip, I18n.t('common.loading'));
             else if (row.error) message(strip, I18n.t('common.loadFailed', { error: row.error }));
-            else if (!row.items.length) message(strip, I18n.t(row.favorites ? 'vod.favEmpty' : 'vod.empty'));
+            else if (!row.items.length) message(strip, I18n.t(row.favorites ? 'vod.favEmpty' : row.watch ? 'vod.watchEmpty' : 'vod.empty'));
             else {
                 const items = rowItems(row);
                 const total = items.length + 1;   // + плитка «Все»
@@ -494,7 +596,8 @@ const VodUI = (() => {
     function posterTile(key, item) {
         const tile = cached(key, () => {
             const t = document.createElement('div');
-            t.className = 'vod-tile';
+            // фильма из «Посмотреть позже» нет ни у одного источника — плитка серая
+            t.className = 'vod-tile' + (item.missing ? ' missing' : '');
             const box = document.createElement('div');
             box.className = 'vod-poster';
             if (item.poster) {
@@ -523,7 +626,8 @@ const VodUI = (() => {
             t.appendChild(name);
             const meta = document.createElement('div');
             meta.className = 'vod-tile-meta';
-            meta.textContent = [item.year, item.type === 'multistream' ? I18n.t('vod.seriesLower') : ''].filter(Boolean).join(' · ');
+            meta.textContent = [item.year, item.type === 'multistream' ? I18n.t('vod.seriesLower') : '',
+                item.missing ? I18n.t('vod.watchMissing') : ''].filter(Boolean).join(' · ');
             t.appendChild(meta);
             t.addEventListener('click', () => openItem(item));
             return t;
@@ -594,7 +698,8 @@ const VodUI = (() => {
      * источника свои идентификаторы) — приложение переключает источник и открывает карточку уже в нём.
      */
     function openItem(item) {
-        if (item.fav && item.src && client && item.src !== client.sourceType && opts.onOtherSource) {
+        if (item.missing) return openMissing(item);
+        if ((item.fav || item.wl) && item.src && client && item.src !== client.sourceType && opts.onOtherSource) {
             return opts.onOtherSource(item);
         }
         return openDetails(item);
@@ -772,6 +877,19 @@ const VodUI = (() => {
 
     function detailButtons(d) {
         const buttons = [];
+        const wl = watchEntryOf(d);
+        const wlRemove = () => ({
+            label: d.wlBusy ? I18n.t('common.loading') : I18n.t('vod.watchRemove'), keep: true, action: () => removeWatch(d, wl)
+        });
+        if (d.missing) {
+            if (!wl) return buttons;
+            buttons.push({ label: d.wlBusy ? I18n.t('common.loading') : I18n.t('vod.watchRecheck'), keep: true, action: () => recheckWatch(d, wl) });
+            buttons.push(wlRemove());
+            if (d.meta.kpId && d.meta.kpReviews) {
+                buttons.push({ label: I18n.t('vod.reviews', { n: d.meta.kpReviews }), keep: true, action: () => openReviews(d) });
+            }
+            return buttons;
+        }
         if (isSeries(d)) {
             if (d.episodes.length) {
                 const ep = d.episodes[d.epIdx] || d.episodes[0];
@@ -830,6 +948,7 @@ const VodUI = (() => {
                 action: () => toggleFavorite(d, id)
             });
         }
+        if (wl) buttons.push(wlRemove());
         return buttons;
     }
 
@@ -896,7 +1015,7 @@ const VodUI = (() => {
         info.appendChild(meta);
 
         const desc = document.createElement('div');
-        desc.className = 'vod-details-desc' + (isSeries(d) ? ' short' : '');
+        desc.className = 'vod-details-desc' + (isSeries(d) ? ' short' : '') + (d.zone === 'desc' ? ' focused' : '');
         desc.textContent = item.description || '';
         info.appendChild(desc);
 
@@ -915,16 +1034,49 @@ const VodUI = (() => {
         if (d.loading) message(btnRow, I18n.t('common.loading'));
         else if (d.error) message(btnRow, I18n.t('common.loadFailed', { error: d.error }));
         else if (d.favError) message(btnRow, I18n.t('vod.favFailed', { error: d.favError }));
+        else if (d.wlMsg) message(btnRow, d.wlMsg);
+        else if (d.missing) message(btnRow, I18n.t('vod.watchMissingInfo'));
         info.appendChild(btnRow);
 
         if (d.episodes.length) renderEpisodes(d, info);
 
+        // длинное описание (у hdrezka бывает на пол-экрана) читается прокруткой: ▲ с верхней строки
+        // кнопок — в описание, ▲▼ — по строкам, ▼ в самом низу — обратно к кнопкам
+        desc.scrollTop = d.descScroll || 0;
+        d.descScroll = desc.scrollTop;
+        d.descMore = desc.scrollHeight > desc.clientHeight + 2;
+        const atEnd = desc.scrollTop + desc.clientHeight >= desc.scrollHeight - 2;
+        desc.classList.toggle('more', d.descMore && !atEnd);
+        if (d.zone === 'desc' && !d.descMore) d.zone = 'buttons';
+        // кнопок может не хватить места и с ужатым описанием — колонка сдвигается к выбранной
+        info.scrollTop = 0;
+        const sel = d.zone === 'buttons' ? info.querySelector('.vod-details-btn.focused')
+            : d.zone === 'episodes' ? info.querySelector('.vod-episode.focused') : null;
+        if (sel) {
+            const over = sel.getBoundingClientRect().bottom - info.getBoundingClientRect().bottom + 12;
+            if (over > 0) info.scrollTop = over;
+        }
+
         const hint = document.createElement('div');
         hint.className = 'vod-details-hint';
-        hint.textContent = d.episodes.length
+        hint.textContent = (d.episodes.length
             ? I18n.t('vod.hintSeries')
-            : I18n.t('vod.hintMovie');
+            : I18n.t('vod.hintMovie')) + (d.descMore ? ' · ' + I18n.t('vod.hintDesc') : '');
         detailsEl.appendChild(hint);
+    }
+
+    /** Прокрутка описания на dir строк (−1 вверх, +1 вниз); false — дальше некуда. */
+    function scrollDesc(d, dir) {
+        const desc = detailsEl.querySelector('.vod-details-desc');
+        if (!desc) return false;
+        const line = 26 * 1.45;
+        const step = Math.max(line, Math.floor((desc.clientHeight - line) / line) * line);
+        const max = Math.max(0, desc.scrollHeight - desc.clientHeight);
+        const from = desc.scrollTop;
+        const to = Math.max(0, Math.min(max, from + dir * step));
+        if (Math.abs(to - from) < 1) return false;
+        d.descScroll = to;
+        return true;
     }
 
     function renderEpisodes(d, parent) {
@@ -1245,6 +1397,7 @@ const VodUI = (() => {
     function detailsKey(key) {
         const d = details;
         if (key === 'back') return closeDetails();
+        if (key === 'enter' && d.zone === 'desc') { d.zone = 'buttons'; return renderDetails(); }
         if (key === 'enter') return activateDetails();
         if (d.zone === 'buttons') {
             const count = detailButtons(d).length;
@@ -1253,11 +1406,16 @@ const VodUI = (() => {
             else if (key === 'up') {
                 const i = buttonInLine(focusedEl('.vod-details-btn', d.btnIdx), -1);
                 if (i >= 0) d.btnIdx = i;
+                else if (d.descMore) d.zone = 'desc';
             } else if (key === 'down') {
                 const i = buttonInLine(focusedEl('.vod-details-btn', d.btnIdx), 1);
                 if (i >= 0) d.btnIdx = i;
                 else if (d.episodes.length) d.zone = 'episodes';
             }
+        } else if (d.zone === 'desc') {
+            if (key === 'up') scrollDesc(d, -1);
+            else if (key === 'down') { if (!scrollDesc(d, 1)) d.zone = 'buttons'; }
+            else if (key === 'left' || key === 'right') d.zone = 'buttons';
         } else {
             const n = d.episodes.length;
             if (key === 'left') d.epIdx = Math.max(0, d.epIdx - 1);

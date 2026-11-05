@@ -45,6 +45,7 @@ const { createKinopoisk } = require('./kinopoisk');
 const { createArchiveChecker } = require('./archive');
 const { createParental } = require('./parental');
 const { createFavorites } = require('./favorites');
+const { createWatchlist } = require('./watchlist');
 const { createPlugins } = require('./plugins');
 const { createSandbox } = require('./sandbox');
 const { createGuide } = require('./guide');
@@ -1044,8 +1045,11 @@ const vod = createVod({
 // избранное общее на все телевизоры и карточку (favorites.js)
 const favorites = createFavorites({ file: path.join(DATA_DIR, 'favorites.json'), log });
 
+// «Посмотреть позже» — то, что прислали с телефона (watchlist.js); тоже общее на все телевизоры
+const watchlist = createWatchlist({ file: path.join(DATA_DIR, 'watchlist.json'), log, kp, vod });
+
 function syncFavoritePosterPins() {
-    vod.setPinnedPosters(favorites.list().map(item => favorites.idOf(item)));
+    vod.setPinnedPosters(favorites.list().map(item => favorites.idOf(item)).concat(watchlist.posterIds()));
 }
 
 syncFavoritePosterPins();
@@ -1843,6 +1847,8 @@ async function requestCommand(msg) {
  *           favorite_add {query? | choice? | id?, tv?} — голосом: без названия — фильм, который сейчас идёт на
  *           телевизоре; с названием — поиск по источникам; вариантов несколько — список на экран и error = ambiguous.
  *           favorites_titles — избранное одними названиями (для ассистента: «подбери что-нибудь по моему избранному»);
+ *           watchlist_add {text, by?} — «Посмотреть позже»: текст или ссылка с телефона (watchlist.js);
+ *           watchlist — список; watchlist_remove {key | query} — убрать;
  *           vod_recommend {titles, tv?} — подборка: из названных фильмов остаются те, что есть у источников и не в
  *           избранном, и уходят на экран телевизора страницей с постерами (iptv/<tv_id>/suggest); выбрать — пультом
  *           или vod_play {choice: N}.
@@ -1884,6 +1890,9 @@ async function handleRequest(msg, resultTopic = 'iptv/request/result') {
                 message: tr(r.favorite ? 'assist.favoriteAdded' : 'assist.favoriteRemoved', { title: msg.title || '' })
             }));
         }
+        if (action === 'watchlist_add') return reply(await requestWatchlistAdd(msg));
+        if (action === 'watchlist') return reply(requestWatchlist());
+        if (action === 'watchlist_remove') return reply(requestWatchlistRemove(msg));
         if (action === 'vod_info') return reply(await requestVodInfo(msg));
         if (action === 'favorite_add') return reply(await requestFavoriteAdd(msg));
         if (action === 'favorites_titles') return reply(requestFavoritesTitles());
@@ -2044,6 +2053,62 @@ function playedQuality(wanted, r, item) {
         key: match ? 'assist.vodOnQuality' : qualities.length > 1 ? 'assist.vodOnNearest' : 'assist.vodOnOnly',
         wanted: want, quality: got, match, qualities
     };
+}
+
+// ───────── «Посмотреть позже» (watchlist.js) ─────────
+
+/** Как источник называется у пользователя: имя его плейлиста («Кино и сериалы»), иначе тип. */
+function sourceName(type) {
+    return (playlistIndex.find(p => p.kind === 'vod' && (VodSources.parseUrl(p.url) || {}).type === type) || {}).name || type;
+}
+
+/** Запись для телевизора и для ответа: source — имя источника, где фильм нашёлся. */
+function watchPublic(item) {
+    return Object.assign({}, item, { source: item.found ? sourceName(item.found.src) : null });
+}
+
+/** watchlist_add {text, by?} — прислали с телефона (webhook HA) или сказали голосом. */
+async function requestWatchlistAdd(msg) {
+    const text = String(msg.text || msg.query || '').trim();
+    const r = await watchlist.add(text, { by: msg.by });
+    if (!r.ok) return { ok: false, error: r.error, text, message: tr('assist.watchNoTitle', { text: text.slice(0, 80) }) };
+    syncFavoritePosterPins();
+    const it = watchPublic(r.item);
+    const name = it.title + (it.year ? ' (' + it.year + ')' : '');
+    const key = r.already ? 'assist.watchAlready' : it.found ? 'assist.watchAddedFound' : 'assist.watchAddedMissing';
+    return {
+        ok: true, already: r.already, item: it, title: it.title, year: it.year, kp_rating: it.kpRating,
+        available: !!it.found, source: it.source,
+        message: tr(key, { title: name, source: it.source || '' }) + (it.kpRating ? ' ★ ' + it.kpRating.toFixed(1) : '')
+    };
+}
+
+function requestWatchlist() {
+    const items = watchlist.list().map(watchPublic);
+    return {
+        ok: true, items,
+        message: items.length
+            ? tr('assist.watchList', { n: items.length, list: items.slice(0, VOICE_RESULTS).map(x => x.title + (x.year ? ' (' + x.year + ')' : '')).join('; ') })
+            : tr('assist.watchEmpty')
+    };
+}
+
+/** watchlist_remove {key} — с телевизора; {query} — голосом, по названию. */
+function requestWatchlistRemove(msg) {
+    let key = msg.key;
+    if (!key && msg.query) {
+        const qa = ChannelMatch.analyze(String(msg.query), false);
+        let best = null;
+        watchlist.list().forEach(i => {
+            const sc = ChannelMatch.score(qa, ChannelMatch.analyze(i.title, false));
+            if (!best || sc > best.sc) best = { i, sc };
+        });
+        if (best && best.sc >= vod.MIN_SCORE) key = best.i.key;
+    }
+    const prev = key ? watchlist.remove(key) : null;
+    if (!prev) return { ok: false, error: 'not_found', message: tr('assist.watchNotFound', { title: msg.query || '' }) };
+    syncFavoritePosterPins();
+    return { ok: true, key: prev.key, title: prev.title, items: watchlist.list().map(watchPublic), message: tr('assist.watchRemoved', { title: prev.title }) };
 }
 
 // ───────── «добавь в избранное» голосом ─────────
@@ -2842,10 +2907,30 @@ const server = http.createServer(async (req, res) => {
             if (!fs.existsSync(file)) return sendJson(res, 404, { error: 'not_found' });
             return send(res, 200, fs.readFileSync(file), { 'Content-Type': 'image/jpeg', 'Cache-Control': 'max-age=86400' });
         }
+        // «Посмотреть позже» — общее на все телевизоры (watchlist.js)
+        if (url === '/watchlist.json') {
+            return sendJson(res, 200, { items: watchlist.list().map(watchPublic) });
+        }
+        if (url === '/watchlist' && req.method === 'POST') {
+            let body;
+            try { body = JSON.parse(await readBody(req) || '{}'); } catch (e) { return sendJson(res, 400, { ok: false, error: 'bad_json' }); }
+            if (body.action === 'add') return sendJson(res, 200, await requestWatchlistAdd(body));
+            if (body.action === 'remove') return sendJson(res, 200, requestWatchlistRemove(body));
+            if (body.action === 'recheck' && body.key) {
+                const it = await watchlist.recheck(body.key);
+                syncFavoritePosterPins();
+                return sendJson(res, 200, { ok: !!it, item: it ? watchPublic(it) : null, items: watchlist.list().map(watchPublic) });
+            }
+            return sendJson(res, 400, { ok: false, error: 'bad_action' });
+        }
         // избранное видеопортала — общее на все телевизоры (favorites.js)
         if (url === '/favorites.json') {
             repairFavoritePosters().catch(() => { /* список доступен и без восстановления постеров */ });
-            return sendJson(res, 200, { items: favorites.list() });
+            // Есть копия постера в аддоне — телевизору её: чужой CDN со временем умирает (05.11.2026 у HdRezka
+            // перестал отвечать адрес постеров), а сохранённая ссылка в записи остаётся старой.
+            // «/local/…» плеер (и старый тоже) превращает в <аддон>/posters/<id>.jpg.
+            return sendJson(res, 200, { items: favorites.list().map(f => (f.posterLocal && /^\/local\//.test(f.posterLocal)
+                ? Object.assign({}, f, { poster: f.posterLocal }) : f)) });
         }
         if (url === '/favorites' && req.method === 'POST') {
             let body;
@@ -3033,3 +3118,7 @@ guide.start();   // напоминания о передачах — прове�
 setInterval(() => history.tick(Object.keys(tvs).filter(id => tvOnline[id]).map(id => tvState[id])), history.TICK_SEC * 1000);
 const refreshMs = Math.max(1, readOptions().refreshHours) * 3600e3;
 setInterval(rebuild, refreshMs);
+// «Посмотреть позже»: то, чего не было у источников, раз в сутки ищем снова (первый раз — через 10 мин после старта)
+const recheckWatchlist = () => pluginsReady.then(() => watchlist.recheckDue()).then(syncFavoritePosterPins).catch(e => log('посмотреть позже: ' + e.message));
+setTimeout(recheckWatchlist, 10 * 60 * 1000);
+setInterval(recheckWatchlist, 3600 * 1000);

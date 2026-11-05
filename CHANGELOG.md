@@ -3,6 +3,41 @@
 Versions: the TV player (`config.xml`) and the Home Assistant add-on (`ha-addon/epg_builder/config.yaml`)
 are numbered separately.
 
+## Add-on 2.22.2
+
+- Add-on: favorites give the TV the add-on's own copy of the poster when it has one — saved links of a movie
+  source stop working when the source moves its image server, and those favorites showed no poster.
+
+## Player 1.4.9
+
+- Player: rows on the movies main screen (favorites, "Watch later", categories) show at most 10 movies, then
+  the "All" tile opens the full list.
+
+## Add-on 2.22.1 / Player 1.4.8
+
+- Player: a long movie description (HDrezka often has half a screen of text) no longer pushes the buttons off the
+  screen — the description shrinks, the button column follows the focused button; ▲ from the top row of buttons
+  scrolls the description (▲▼), ▼ at its end or OK — back to the buttons.
+- HA card: "Share" in the movie card and a share button for the whole favorites list — title and year
+  ("Se7en (1995)"), through the system share menu or the clipboard.
+
+## Player 1.4.7
+
+- Player: the "Watch later" row is shown only when it has movies (it appears as soon as one arrives).
+- Android app "AssisTV: To TV" (`android/`): "To TV" in the menu of selected text, in Share and as a quick-settings
+  tile (sends the clipboard) — sends titles and links to "Watch later" without third-party apps.
+
+## Add-on 2.22.0 / Player 1.4.6
+
+- **"Watch later"**: send a movie title or a link from the phone (Android "Share" or the clipboard, via an HA
+  webhook — `ha-config/assistv-watchlist-webhook.yaml`) or by voice (`iptv_watchlist_add`). The add-on
+  identifies the movie on Kinopoisk (links to Kinopoisk/IMDb, page titles of YouTube and other links, hashtags
+  and "trailer" are cleaned away) and looks for it in all sources; what is missing is checked again daily.
+- Player: the "Watch later" row first in the movies screen; movies no source has yet are grey with their poster
+  and open a card with "Search again" and "Remove"; found ones have "Remove from Watch later" next to ♡.
+- Add-on: `iptv/request` actions `watchlist_add {text}`, `watchlist`, `watchlist_remove {key | query}`;
+  `GET /watchlist.json`, `POST /watchlist {action: add | remove | recheck}`.
+
 ## Add-on 2.21.5
 
 - HA card: `collapse_channels: true` folds the channel list under a "Channels" row (closed on load, opens with a tap);

@@ -167,6 +167,8 @@
     .vod-fav-box summary::-webkit-details-marker { display: none; }
     .vod-fav-box summary::before { content: '▶'; font-size: 10px; transition: transform .15s; }
     .vod-fav-box[open] summary::before { transform: rotate(90deg); }
+    .vod-fav-box .fav-share { margin-left: auto; border: 0; background: none; color: var(--secondary-text-color); cursor: pointer; padding: 2px 6px; --mdc-icon-size: 18px; }
+    .vod-fav-box:not([open]) .fav-share { display: none; }
     .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
     .chips::-webkit-scrollbar { display: none; }
     .chips button { flex: none; padding: 6px 14px; border-radius: 999px; font-size: 14px; border: 1px solid var(--divider-color, rgba(0,0,0,.12)); white-space: nowrap; }
@@ -427,7 +429,7 @@
                     <div class="vod-recent" id="vodRecent" hidden></div>
                     <div class="vod-detail" id="vodDetail" hidden></div>
                     <details class="vod-fav-box" id="vodFav" hidden>
-                      <summary>${esc(_t('vod.favorites'))}</summary>
+                      <summary>${esc(_t('vod.favorites'))}<button class="fav-share" data-vodsharelist="1" title="${esc(_t('vod.shareList'))}"><ha-icon icon="mdi:share-variant"></ha-icon></button></summary>
                       <div class="posters" id="vodFavGrid"></div>
                       <div class="empty" id="vodFavEmpty" hidden>${esc(_t('vod.favEmpty'))}</div>
                     </details>
@@ -455,6 +457,9 @@
                 if (vodAct) return this._playVod(vodAct.dataset.vodplay, vodAct.dataset.ep, vodAct.dataset.start === '1', vodAct, vodAct.dataset.stream);
                 const fav = e.target.closest('[data-vodfav]');
                 if (fav) return this._toggleFavorite(fav.dataset.vodfav, fav);
+                const share = e.target.closest('[data-vodshare]');
+                if (share) return this._shareVod(share.dataset.vodshare);
+                if (e.target.closest('[data-vodsharelist]')) { e.preventDefault(); return this._shareFavorites(); }
                 if (e.target.closest('[data-vodclose]')) { this.$('vodDetail').hidden = true; this._vodDetail = null; return; }
                 const arch = e.target.closest('[data-arch]');
                 if (arch) return this._archAction(arch.dataset.arch, arch);
@@ -926,6 +931,55 @@
             }
         }
 
+        /** «Семь (1995)» — название и год, как их удобно отправить другому человеку. */
+        _shareLine(x) {
+            const title = String((x && x.title) || '').trim();
+            const year = x && x.year ? String(x.year) : '';
+            return year && title.indexOf('(' + year + ')') < 0 ? `${title} (${year})` : title;
+        }
+
+        _shareVod(id) {
+            const item = this._vodItem && vodId(this._vodItem) === String(id) ? this._vodItem
+                : (this._vodResults || []).concat(this._favorites || []).find(x => vodId(x) === String(id));
+            const text = this._shareLine(item);
+            if (text) this._shareText(text);
+        }
+
+        _shareFavorites() {
+            const lines = (this._favorites || []).map(x => this._shareLine(x)).filter(Boolean);
+            if (!lines.length) return this._toast(_t('vod.favEmpty'), 3000);
+            this._shareText(lines.join('\n'));
+        }
+
+        /**
+         * Системное меню «Поделиться» (телефон, приложение HA), иначе — в буфер обмена.
+         * По http (адрес в локальной сети) ни share, ни navigator.clipboard браузер не даёт —
+         * тогда старый способ через скрытое поле и execCommand('copy').
+         */
+        async _shareText(text) {
+            if (navigator.share) {
+                try { await navigator.share({ text }); return; }
+                catch (err) { if (err && err.name === 'AbortError') return; }
+            }
+            let ok = false;
+            try {
+                if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); ok = true; }
+            } catch (_) { /* ниже — запасной способ */ }
+            if (!ok) {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.setAttribute('readonly', '');
+                ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+                this.shadowRoot.appendChild(ta);
+                ta.select();
+                try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+                ta.remove();
+            }
+            const first = text.split('\n')[0];
+            const more = text.split('\n').length > 1 ? ' …' : '';
+            this._toast(ok ? _t('vod.shareCopied', { text: first + more }) : _t('vod.shareFailed'), 4000);
+        }
+
         async _openVod(id) {
             const box = this.$('vodDetail');
             const brief = (this._vodResults || []).concat(this._favorites || [])
@@ -961,14 +1015,16 @@
             const on = this._isFavorite(vodId(item));
             const favBtn = loading ? '' :
                 `<button class="pill secondary fav-btn${on ? ' on' : ''}" data-vodfav="${fid}">${on ? '♥ ' : '♡ '}${esc(_t(on ? 'vod.favRemove' : 'vod.favAdd'))}</button>`;
+            const shareBtn = loading ? '' :
+                `<button class="pill secondary" data-vodshare="${fid}">${esc(_t('vod.share'))}</button>`;
             // несколько озвучек одного фильма — кнопка на каждую; у портала озвучка одна и streams пустой
             const streams = (item.streams || []).filter(s => s.name);
             const watch = streams.length > 1
                 ? streams.map(s => `<button class="pill" data-vodplay="${fid}" data-stream="${esc(s.id)}">▶ ${esc(s.name)}</button>`).join('')
                 : `<button class="pill" data-vodplay="${fid}">▶ ${esc(_t('card.watchOnTv'))}</button>`;
             const buttons = loading ? '' : series
-                ? `${watch}${favBtn}`
-                : `${watch}<button class="pill secondary" data-vodplay="${fid}" data-start="1">${esc(_t('vod.fromStart'))}</button>${favBtn}`;
+                ? `${watch}${favBtn}${shareBtn}`
+                : `${watch}<button class="pill secondary" data-vodplay="${fid}" data-start="1">${esc(_t('vod.fromStart'))}</button>${favBtn}${shareBtn}`;
             const eps = episodes && episodes.length
                 ? `<div class="d-meta">${esc(_t('card.episodeHint'))}</div>
                    <div class="episodes">${episodes.map(e => `<button data-vodplay="${fid}" data-ep="${esc(vodId(e))}">${esc(e.title)}</button>`).join('')}</div>`

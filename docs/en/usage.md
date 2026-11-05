@@ -93,8 +93,8 @@ Choose a movie playlist (RETURN on the group strip of the home screen → "Movie
 There may be several movie sources (the provider's video portal and plugins) — each one appears as a
 separate playlist. Search and rows work inside the open source; favourites are shared by all of them.
 
-- Main screen — the **"Favourites"** row (first), "Continue watching", category rows, search, genre and
-  year filter.
+- Main screen — the **"Watch later"** and **"Favourites"** rows (first), "Continue watching", category rows,
+  search, genre and year filter.
 - Movie card: description, quality, audio versions (a button for each if there are several), seasons and
   episodes for a series.
 - **Rating** on the card: `★ 8.5 KP` (Kinopoisk) and next to it `★ 8.2 TMDB`. This needs keys in the add-on
@@ -120,6 +120,44 @@ wipe it.
 - If several movies fit the title, a numbered list appears on the screen: choose with **▲ ▼** or a digit
   and press **OK** — or answer by voice, "the second one".
 - A movie from another source opens by itself: the player switches to the right source.
+
+### Watch later
+
+Saw a movie in a feed, a chat or a trailer? Send the title from your phone, and at home it is already in the
+**"Watch later"** row with its poster. This list is also shared by the whole home and stored in the add-on.
+
+- You can send a **title** ("Dune"), **a line from a post** ("Dune (2021) — official trailer #movies") or
+  **a link**: to Kinopoisk or IMDb (the most precise), to YouTube or any page with a trailer — the add-on takes
+  the page title. Hashtags, "trailer", "watch online" and the like are dropped automatically.
+- The add-on identifies the movie via Kinopoisk (needs a key, see [addon-iptv.md](addon-iptv.md)) and looks for
+  it in all sources. Found — OK opens the usual card. Not available anywhere — the tile is **grey** with a poster
+  and "not in any source"; the add-on looks for such movies again once a day, and the card has a
+  **"Search again"** button.
+- The card has **✕ Remove from "Watch later"** and, for a found movie, **♡ Add to favourites**.
+- By voice: "add Dune to watch later" — the `iptv_watchlist_add` script in
+  [ha-config/iptv-assist-scripts.yaml](../../ha-config/iptv-assist-scripts.yaml).
+
+**Sending from an Android phone** (set up once):
+
+1. In Home Assistant add the automation from
+   [ha-config/assistv-watchlist-webhook.yaml](../../ha-config/assistv-watchlist-webhook.yaml): make up a long
+   random `webhook_id` (it works as the address password) and put your own `notify.mobile_app_…` — the answer
+   "Added: Dune (2021) — available in "Movies" ★ 7.7" arrives there. List the family phones in `phones`: add
+   `?to=anna` to the address on Anna's phone and the answer goes to her, not to you.
+2. Install the **"AssisTV: To TV"** app from the [android/](../../android/README.md) folder — the ready file
+   [AssisTV-To-TV.apk](../../android/AssisTV-To-TV.apk): copy it to the phone and open it.
+3. Open it, paste `https://<your HA>/api/webhook/<your webhook_id>?to=<name>` and tap **Save**. The saved address
+   cannot be changed by accident: **"✎ Edit"** to change it, **"Delete"** to clear it.
+4. Optionally: quick settings → pencil → add the **"To TV"** tile.
+
+Using it:
+
+- **Selected some text** anywhere → **"To TV"** in the menu above the selection (sometimes behind "⋮").
+- **Share** (text or a link in any app) → **"To TV"**.
+- **A title inside a video frame**: hold the Home button (Circle to Search), select the title → **Copy** → the
+  **"To TV"** tile: it sends what is in the clipboard. Circle to Search has no room for other apps in its menu —
+  Google shows only Copy and Translate there.
+- "Sent to "Watch later"" flashes at the bottom; what was found arrives as a Home Assistant notification.
 
 ### Movie suggestions based on your favourites
 

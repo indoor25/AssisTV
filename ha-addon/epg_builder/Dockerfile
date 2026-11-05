@@ -8,7 +8,7 @@ WORKDIR /app
 # ws и mqtt-packet — MQTT телевизоров через аддон (mqtt-proxy.js)
 COPY package.json ./
 RUN npm install --omit=dev --no-audit --no-fund
-COPY build.js server.js card-data.js vod.js tmdb.js kinopoisk.js archive.js parental.js favorites.js plugins.js guide.js history.js pairing.js mqtt-proxy.js sandbox.js plugin-host.js ./
+COPY build.js server.js card-data.js vod.js tmdb.js kinopoisk.js archive.js parental.js favorites.js watchlist.js plugins.js guide.js history.js pairing.js mqtt-proxy.js sandbox.js plugin-host.js ./
 COPY card ./card
 COPY web ./web
 # shared/ — копии js/channel-name.js, js/m3u-parser.js, js/xmltv-parser.js, js/channel-match.js, js/vod-sources.js,

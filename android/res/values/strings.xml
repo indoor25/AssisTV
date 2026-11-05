@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AssisTV: To TV</string>
+    <string name="action_label">To TV</string>
+    <string name="url_label">Home Assistant webhook address</string>
+    <string name="url_hint">https://…/api/webhook/…</string>
+    <string name="save">Save</string>
+    <string name="saved">Saved</string>
+    <string name="send_clip">Send the clipboard</string>
+    <string name="help">Select a movie title anywhere and choose “To TV” in the menu, or share a title or a link to “To TV”. In the quick settings you can add the “To TV” tile — it sends what you copied. The answer comes as a Home Assistant notification.</string>
+    <string name="no_url">Set the webhook address in the app first</string>
+    <string name="empty">Nothing to send — the text is empty</string>
+    <string name="sending">Sending to TV…</string>
+    <string name="sent">Sent to “Watch later”</string>
+    <string name="failed">Not sent: %1$s</string>
+    <string name="add_tile">Add the tile to quick settings</string>
+    <string name="tile_already">The tile is already in quick settings</string>
+    <string name="edit">✎ Edit</string>
+    <string name="delete">Delete</string>
+    <string name="delete_ask">Delete the saved address?</string>
+</resources>

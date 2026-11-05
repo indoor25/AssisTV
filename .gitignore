@@ -42,3 +42,4 @@ AGENTS.md
 # сайт документации (tools/site/prepare.js, mkdocs build)
 .site-src/
 .site/
+android/build/

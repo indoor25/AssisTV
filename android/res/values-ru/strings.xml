@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AssisTV: На TV</string>
+    <string name="action_label">На TV</string>
+    <string name="url_label">Адрес webhook Home Assistant</string>
+    <string name="url_hint">https://…/api/webhook/…</string>
+    <string name="save">Сохранить</string>
+    <string name="saved">Сохранено</string>
+    <string name="send_clip">Отправить буфер обмена</string>
+    <string name="help">Выделите название фильма где угодно и выберите в меню «На TV» или поделитесь названием или ссылкой в «На TV». В шторку можно добавить плитку «На TV» — она отправляет скопированное. Ответ придёт уведомлением Home Assistant.</string>
+    <string name="no_url">Сначала укажите адрес webhook в приложении</string>
+    <string name="empty">Нечего отправлять — текст пустой</string>
+    <string name="sending">Отправляю на TV…</string>
+    <string name="sent">Отправлено в «Посмотреть позже»</string>
+    <string name="failed">Не отправилось: %1$s</string>
+    <string name="add_tile">Добавить плитку в шторку</string>
+    <string name="tile_already">Плитка уже в шторке</string>
+    <string name="edit">✎ Изменить</string>
+    <string name="delete">Удалить</string>
+    <string name="delete_ask">Удалить сохранённый адрес?</string>
+</resources>

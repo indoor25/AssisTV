@@ -761,7 +761,10 @@
             if (this._mqttReady) return this._mqttReady;
             if (!this._hass) return Promise.reject(new Error('нет hass'));
             this._pending = this._pending || new Map();
-            const topics = ['iptv/vod/search/result', 'iptv/vod/details/result', 'iptv/request/result', 'iptv/card/request/result'];
+            // iptv/request/result — через «/#»: HA отдаёт одно сообщение всем подписчикам с той же строкой топика,
+            // а websocket-подписка получает байты. Когда она срабатывала первой, атрибуты sensor.iptv_otvet
+            // не обновлялись («JSON result was not a dictionary»), и скрипты Assist ждали ответ до таймаута.
+            const topics = ['iptv/vod/search/result', 'iptv/vod/details/result', 'iptv/request/result/#', 'iptv/card/request/result'];
             const onMsg = (m) => {
                 let p;
                 try { p = JSON.parse(m.payload); } catch (e) { return; }

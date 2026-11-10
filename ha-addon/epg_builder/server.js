@@ -1219,9 +1219,8 @@ async function ensurePlayer(t) {
         if (!p.ok) return { ok: false, error: 'tv_power_' + (p.error || 'failed') };
     }
     if (tvOnline[t.tv_id]) return { ok: true };
-    // после включения TV сам мог открыть плеер (он был запущен до выключения) — даём ему несколько секунд
-    const early = await waitFor(`iptv/${t.tv_id}/availability`, m => m === 'online', 8000);
-    if (early) return { ok: true };
+    // Запускаем сразу: раньше ждали 8 с, вдруг TV сам откроет плеер, но по журналу (04–06.11.2026) этого
+    // не случилось ни разу — только +8 с к голосовой команде. Плеер уже открыт — запуск выводит его на экран.
     const l = await launchTvApp(target, DEFAULT_APP_ID);
     if (!l.ok) return { ok: false, error: 'launch_failed' };
     const online = tvOnline[t.tv_id] || await waitFor(`iptv/${t.tv_id}/availability`, m => m === 'online', 45000);

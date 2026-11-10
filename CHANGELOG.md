@@ -16,6 +16,17 @@ are numbered separately. The installer (`installer/package.json`) has its own ve
 - Docs: the installer is now the first way in `docs/install-tv.md` (ru/en); broken paths in the section for
   2017–2020 TVs are fixed.
 
+## Add-on 2.22.4
+
+- Add-on card: listens to `iptv/request/result/#` instead of the exact topic. With the card open, Home Assistant
+  could hand the add-on's answer to `sensor.iptv_otvet` as raw bytes ("JSON result was not a dictionary"), the
+  attributes stayed old and voice scripts waited for the answer until the timeout — the assistant said nothing.
+
+## Add-on 2.22.3
+
+- Add-on: a voice command for a TV that is off starts the player right after the TV wakes up — it no longer
+  waits 8 s first for the player to open by itself (it never did), so the command works about 8 s sooner.
+
 ## Add-on 2.22.2
 
 - Add-on: favorites give the TV the add-on's own copy of the poster when it has one — saved links of a movie

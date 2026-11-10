@@ -1,7 +1,20 @@
 # Changelog
 
 Versions: the TV player (`config.xml`) and the Home Assistant add-on (`ha-addon/epg_builder/config.yaml`)
-are numbered separately.
+are numbered separately. The installer (`installer/package.json`) has its own version too.
+
+## Installer 0.1.0 (new)
+
+- **AssisTV Installer** (`installer/`) — installs the player, or any other `.wgt`, on a Samsung TV without Tizen Studio.
+  One Windows program with a page in the browser (en/ru/uk/de): finds the TVs on the network, shows how to turn on
+  Developer Mode and the exact Host PC IP and notices by itself when the TV is ready; TVs with Tizen 7+ get a Samsung
+  certificate after one sign-in to a Samsung account, older ones are signed with a Tizen certificate made on the spot.
+  Then it signs the package, sends it to the TV, installs and can start it. Tested on a TV with Tizen 10.
+- GitHub Releases now carry `AssisTV.wgt` (the `-Legacy` build for all TVs, unsigned — the installer signs it) and
+  `AssisTV-Installer.exe`; `tools/release.ps1` builds and uploads both. `tools/build-wgt.ps1 -Unsigned` builds a
+  package without a signature and without Tizen Studio.
+- Docs: the installer is now the first way in `docs/install-tv.md` (ru/en); broken paths in the section for
+  2017–2020 TVs are fixed.
 
 ## Add-on 2.22.2
 

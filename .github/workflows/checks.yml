@@ -29,6 +29,13 @@ jobs:
         run: node tools/watchlist-test.js
       - name: Translations
         run: node tools/i18n-check.js
+      - name: Installer
+        working-directory: installer
+        run: |
+          npm ci --no-audit --no-fund
+          node test/selftest.js --offline
+          node test/parse-access.js
+          node test/errors-test.js
       - name: Shared files are in sync with the add-on
         run: |
           for f in channel-name.js m3u-parser.js xmltv-parser.js channel-match.js vod-sources.js i18n.js; do

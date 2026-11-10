@@ -139,8 +139,9 @@ The add-on repository is added to Home Assistant with one button:
 
 1. **[The add-on in Home Assistant](docs/en/install-ha-addons.md)** — Mosquitto, the Samsung TV integration,
    the "AssisTV" add-on, your playlists and EPG.
-2. **[The app on the TV](docs/en/install-tv.md)** — Tizen Studio, developer mode, certificate, build and
-   install, first start.
+2. **[The app on the TV](docs/en/install-tv.md)** — an installer for Windows
+   ([download AssisTV-Installer.exe](https://github.com/indoor25/AssisTV/releases/latest/download/AssisTV-Installer.exe)):
+   you turn on Developer Mode on the TV, it does the rest. No Tizen Studio.
 3. **[The card on a Home Assistant dashboard](docs/en/ha-dashboards.md)** — control from a phone or computer.
 4. **[Voice and chat (Assist)](docs/en/assist.md)** — so that you can type or say "put BBC One on".
 

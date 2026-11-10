@@ -43,3 +43,6 @@ AGENTS.md
 .site-src/
 .site/
 android/build/
+
+# установщик: собранный .exe
+installer/dist/

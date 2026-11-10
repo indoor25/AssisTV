@@ -9,7 +9,51 @@ like any other app.
 
 Before this step the add-on must be running — [install-ha-addons.md](install-ha-addons.md).
 
-Allow about an hour (mostly for downloading and installing Tizen Studio).
+Signing and sending to the TV are done by the **installer** — this is the easy way, about 10 minutes.
+Below it is the manual way with Tizen Studio (about an hour); you need it if you change the player's code.
+
+## Easy way: AssisTV Installer (Windows)
+
+You need: a Windows computer in the same home network as the TV; a Samsung account (the one on the TV or any
+other — free) — only for TVs from 2023 on.
+
+1. **Download** [AssisTV-Installer.exe](https://github.com/indoor25/AssisTV/releases/latest/download/AssisTV-Installer.exe)
+   (all versions — [Releases](https://github.com/indoor25/AssisTV/releases)) and start it.
+   Windows may warn that the program is unknown: **"More info" → "Run anyway"** (the program has no paid
+   publisher signature). A terminal window and a page in your browser open — keep the window open while
+   installing.
+2. **Choose the TV.** Samsung TVs that are on are found automatically. Not in the list — type the TV's IP
+   (on the TV: Settings → Network → Network Status → IP Settings).
+3. **Turn on Developer Mode** — the page shows the steps and the **exact address** to enter:
+   on the TV **Apps** → on the remote **1 2 3 4 5** → **Developer mode — On**, **Host PC IP** — the address from
+   the page → **OK** → hold the power button for 5 seconds (restart). The page notices when the TV is ready and
+   continues by itself.
+4. **Choose what to install:** "AssisTV" — the latest version from GitHub. Here you can also install your own
+   `.wgt` file or an app from another GitHub repository (`owner/repository`).
+5. **"Install on the TV".** A TV from 2023 on (Tizen 7+) asks you to **sign in to Samsung** once: Samsung's page
+   opens, and after you sign in the installer gets a certificate for your TV by itself and continues.
+   The password is typed only on Samsung's page. Older TVs need no sign-in.
+6. **"Installed"** → "Open on the TV" → then the [first start](#27-first-start).
+   **"Close the installer"** ends the program.
+
+**Updating** is the same: start the installer, choose the TV and "AssisTV". The player's settings are kept.
+The installer keeps certificates in `%APPDATA%\AssisTV-Installer` — **do not delete this folder**: an app can be
+updated in place only with the same certificate; with a new one it has to be removed first, and its settings on
+the TV are lost.
+
+| What you see | What to do |
+|--------------|------------|
+| The TV is not found | it is off or in another network (guest Wi-Fi); type its IP by hand |
+| "The TV does not accept the connection" | Developer Mode is off, or the TV was not restarted after turning it on |
+| "The TV dropped the connection" | Host PC IP has a wrong address — enter the one from the page and restart the TV |
+| After the Samsung sign-in the page does not continue | copy everything Samsung's page shows and paste it into the field in the installer |
+| "This app is already on the TV, installed by someone else" | it was installed with another certificate (for example from Tizen Studio); "Remove and install again" — its settings are lost |
+| "The TV refused the package" | the TV's answer is shown below; for someone else's app — send it to its author |
+
+The installer opens a page only on your own computer (127.0.0.1) and does not listen to the network.
+Its source code — the [`installer/`](../../installer/README.md) folder.
+
+## Manual way: Tizen Studio
 
 ## 2.1. Download the project
 
@@ -79,12 +123,12 @@ The script builds the package from a clean copy (only the player's files go into
 
 **A 2017–2020 TV** (Tizen 3–5.5; the model shows the year: …M… — 2017, …N… — 2018, …R… — 2019,
 …T… — 2020): add **`-Legacy`** — the script converts the code for the TV's older browser and builds
-`.buildResultAssisTV-legacy.wgt`. It needs [Node.js](https://nodejs.org) (run `npm install` once in
-`toolslegacy`):
+`.buildResult\AssisTV-legacy.wgt`. It needs [Node.js](https://nodejs.org) (run `npm install` once in
+`tools\legacy`):
 
 ```powershell
-cd C:AssisTV	oolslegacy; npm install; cd C:AssisTV
-.	oolsuild-wgt.ps1 -Cert mytv -Legacy -Install 192.168.1.20:26101
+cd C:\AssisTV\tools\legacy; npm install; cd C:\AssisTV
+.\tools\build-wgt.ps1 -Cert mytv -Legacy -Install 192.168.1.20:26101
 ```
 
 The regular build simply does not install on such a TV (an error about the platform version).

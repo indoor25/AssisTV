@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AssisTV Installer</title>
+<style>
+:root { --bg:#0f1b2a; --card:#17273a; --line:#2a3d55; --text:#e8eef5; --dim:#9db0c4; --accent:#18bcf2; --ok:#3ecf8e; --bad:#ff6b6b; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui, "Segoe UI", sans-serif; }
+main { max-width:720px; margin:0 auto; padding:24px 16px 64px; }
+header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+header h1 { font-size:22px; margin:0; flex:1; }
+header .logo { width:40px; height:40px; border-radius:10px; background:var(--accent); display:grid; place-items:center; color:#0f1b2a; font-weight:800; font-size:22px; }
+select, input[type=text] { background:#0c1622; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:9px 10px; font:inherit; }
+input[type=text] { width:100%; }
+.steps { display:flex; gap:6px; margin-bottom:18px; }
+.steps i { flex:1; height:4px; border-radius:2px; background:var(--line); }
+.steps i.on { background:var(--accent); }
+.card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; }
+.card h2 { margin:0 0 6px; font-size:20px; }
+.card p { margin:8px 0; color:var(--dim); }
+.card p.plain { color:var(--text); }
+button { font:inherit; border:0; border-radius:10px; padding:11px 18px; cursor:pointer; background:var(--accent); color:#06202c; font-weight:600; }
+button.ghost { background:transparent; color:var(--text); border:1px solid var(--line); font-weight:400; }
+button:disabled { opacity:.5; cursor:default; }
+.row { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; align-items:center; }
+.list { display:grid; gap:8px; margin:14px 0; }
+.item { display:flex; gap:12px; align-items:center; width:100%; text-align:left; background:#0c1622; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-weight:400; }
+.item:hover, .item.sel { border-color:var(--accent); }
+.item b { display:block; }
+.item small { color:var(--dim); }
+.item .grow { flex:1; min-width:0; }
+.tag { font-size:13px; padding:2px 8px; border-radius:20px; border:1px solid var(--line); color:var(--dim); white-space:nowrap; }
+.tag.ok { color:var(--ok); border-color:var(--ok); }
+ol { padding-left:22px; margin:12px 0; }
+ol li { margin:8px 0; }
+.ip { display:inline-block; font:700 26px ui-monospace, Consolas, monospace; letter-spacing:1px; color:var(--accent); background:#0c1622; border:1px dashed var(--accent); border-radius:10px; padding:6px 14px; margin:6px 0; }
+.bar { height:10px; background:#0c1622; border-radius:5px; overflow:hidden; margin:14px 0 6px; }
+.bar i { display:block; height:100%; width:0; background:var(--accent); transition:width .3s; }
+.msg { margin-top:14px; padding:12px 14px; border-radius:10px; background:#0c1622; border-left:4px solid var(--accent); }
+.msg.bad { border-color:var(--bad); }
+.msg.ok { border-color:var(--ok); }
+pre { white-space:pre-wrap; word-break:break-word; font:13px ui-monospace, Consolas, monospace; color:var(--dim); max-height:180px; overflow:auto; margin:8px 0 0; }
+.spin { display:inline-block; width:16px; height:16px; border:2px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:r 1s linear infinite; vertical-align:-3px; margin-right:8px; }
+@keyframes r { to { transform:rotate(360deg); } }
+footer { margin-top:18px; color:var(--dim); font-size:13px; text-align:center; }
+footer a { color:var(--dim); }
+.hide { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="logo">A</div>
+  <h1>AssisTV Installer</h1>
+  <select id="lang" aria-label="Language">
+    <option value="en">English</option><option value="ru">Русский</option><option value="uk">Українська</option><option value="de">Deutsch</option>
+  </select>
+</header>
+<div class="steps" id="steps"><i></i><i></i><i></i><i></i></div>
+<div class="card" id="card"></div>
+<footer><span id="ver"></span> · <a href="https://github.com/indoor25/AssisTV" target="_blank" rel="noopener">github.com/indoor25/AssisTV</a>
+  <div style="margin-top:12px"><button class="ghost" id="quit" type="button"></button></div></footer>
+</main>
+<script>
+'use strict';
+var TOKEN = '__TOKEN__', VERSION = '__VERSION__', DEFAULT_REPO = '__DEFAULT_REPO__';
+
+var L = {
+en: {
+  s1: 'Choose your TV', s1hint: 'The TV must be switched on and connected to the same home network as this computer.',
+  searching: 'Searching for Samsung TVs…', none: 'No TV found. Check that it is on, or enter its IP address (TV: Settings → Network → Network Status → IP Settings).',
+  again: 'Search again', manual: 'TV IP address', next: 'Continue', back: 'Back',
+  devOn: 'developer mode on', devOff: 'developer mode off',
+  s2: 'Turn on Developer Mode on the TV', s2hint: 'This is the only thing you do by hand. The page continues by itself once the TV is ready.',
+  d1: 'On the TV open <b>Apps</b> (the app list).', d2: 'Press <b>1 2 3 4 5</b> on the remote. No number buttons? Hold the <b>123</b> button and pick the digits on screen.',
+  d3: 'In the window that appears switch <b>Developer mode</b> to <b>On</b> and enter this address in <b>Host PC IP</b>:',
+  d4: 'Press OK, then <b>hold the power button</b> on the remote for 5 seconds until the TV restarts.',
+  waitingDev: 'Waiting for the TV…', devWrongIp: 'Developer mode is on, but Host PC IP is {ip}. Enter the address shown above and restart the TV.',
+  devOkRestart: 'Developer mode is on. If connecting fails, restart the TV: hold the power button for 5 seconds.',
+  connecting: 'Connecting to the TV…', tryConnect: 'Check now',
+  s3: 'What to install', s3tv: '{name} · Tizen {ver}', appDefault: 'AssisTV', appDefaultHint: 'Latest version from GitHub',
+  appFile: 'My own .wgt file', appFileHint: 'Any Tizen web app package from this computer', appRepo: 'From GitHub', appRepoHint: 'owner/repository — the .wgt from its latest release',
+  load: 'Load', loading: 'Downloading…', chosen: '{name} {ver}', install: 'Install on the TV',
+  s4: 'Sign in to Samsung', s4hint: 'TVs from 2023 on (Tizen 7+) only accept apps signed with your own free Samsung certificate. Sign in once; the installer creates the certificate for this TV by itself. Your password goes only to Samsung.',
+  signin: 'Sign in to Samsung', waitSignin: 'Waiting for sign-in in the new tab…', creating: 'Creating the certificate (up to a minute)…',
+  s5: 'Installing', st_download: 'Downloading the app…', st_signing: 'Signing the package…', st_upload: 'Sending to the TV…', st_installing: 'The TV is installing the app…', st_uninstalling: 'Removing the old copy…',
+  done: 'Installed: {name} {ver}', doneHint: 'The app is in the TV app list. You can turn it on right now.', open: 'Open on the TV', opened: 'Started on the TV.', notOpened: 'Could not start it — open it from the app list on the TV.',
+  more: 'Install something else', failed: 'The TV refused the package',
+  mismatch: 'This app is already on the TV, installed by someone else (another certificate). It can only be replaced by removing it first — its settings on the TV will be lost.',
+  replace: 'Remove and install again',
+  e_bad_address: 'This does not look like an IP address (example: 192.168.1.20).', e_tv_unreachable: 'No answer from this address. Is the TV on and in the same network?',
+  e_sdb_refused: 'The TV does not accept the connection: Developer Mode is off, or the TV was not restarted after turning it on.',
+  e_sdb_rejected: 'The TV dropped the connection: the Host PC IP on the TV is not this computer\'s address, or the TV was not restarted.',
+  e_sdb_timeout: 'The TV does not answer. Is it on?', e_sdb_no_answer: 'The TV does not answer. Is it on?', e_sdb_network: 'Network error while connecting to the TV.', e_sdb_reset: 'The TV reset the connection. Restart the TV and try again.',
+  e_no_release: 'No .wgt found in the latest release of {d}.', e_github_error: 'GitHub did not answer ({d}).', e_bad_repo: 'Write it as owner/repository.',
+  e_not_wgt: 'This is not a Tizen web app package (.wgt).', e_too_big: 'The file is too large.', e_too_new: 'This app needs a newer TV (Tizen {d}).',
+  e_need_samsung: 'Sign in to Samsung first.', e_samsung_port: 'Port 4794 is busy (is another installer running?). Close it and start again.',
+  e_bad_samsung_answer: 'Unexpected answer from Samsung. Try again.', e_busy: 'Still working, wait a moment.', e_internal: 'Something went wrong: {d}', e_net: 'The installer window was closed. Start the program again.'
+},
+ru: {
+  s1: 'Выберите телевизор', s1hint: 'Телевизор должен быть включён и подключён к той же домашней сети, что и этот компьютер.',
+  searching: 'Ищу телевизоры Samsung…', none: 'Телевизор не найден. Проверьте, что он включён, или введите его IP-адрес (на TV: Настройки → Сеть → Состояние сети → Настройки IP).',
+  again: 'Искать снова', manual: 'IP-адрес телевизора', next: 'Дальше', back: 'Назад',
+  devOn: 'режим разработчика включён', devOff: 'режим разработчика выключен',
+  s2: 'Включите на телевизоре режим разработчика', s2hint: 'Это единственное, что делается руками. Когда телевизор будет готов, страница продолжит сама.',
+  d1: 'На телевизоре откройте <b>Apps</b> (список приложений).', d2: 'Нажмите на пульте <b>1 2 3 4 5</b>. Нет цифр на пульте — удерживайте кнопку <b>123</b> и выберите цифры на экране.',
+  d3: 'В появившемся окне включите <b>Developer mode — On</b> и впишите в <b>Host PC IP</b> этот адрес:',
+  d4: 'Нажмите OK и <b>удерживайте кнопку питания</b> на пульте 5 секунд, пока телевизор не перезагрузится.',
+  waitingDev: 'Жду телевизор…', devWrongIp: 'Режим разработчика включён, но в Host PC IP вписан {ip}. Впишите адрес, показанный выше, и перезагрузите телевизор.',
+  devOkRestart: 'Режим разработчика включён. Если подключиться не удаётся — перезагрузите телевизор: удерживайте кнопку питания 5 секунд.',
+  connecting: 'Подключаюсь к телевизору…', tryConnect: 'Проверить сейчас',
+  s3: 'Что установить', s3tv: '{name} · Tizen {ver}', appDefault: 'AssisTV', appDefaultHint: 'Последняя версия с GitHub',
+  appFile: 'Свой файл .wgt', appFileHint: 'Любой пакет веб-приложения Tizen с этого компьютера', appRepo: 'С GitHub', appRepoHint: 'владелец/репозиторий — .wgt из последнего релиза',
+  load: 'Загрузить', loading: 'Скачиваю…', chosen: '{name} {ver}', install: 'Установить на телевизор',
+  s4: 'Вход в Samsung', s4hint: 'Телевизоры с 2023 года (Tizen 7 и новее) принимают только приложения, подписанные вашим бесплатным сертификатом Samsung. Войдите один раз — сертификат для этого телевизора программа сделает сама. Пароль уходит только в Samsung.',
+  signin: 'Войти в Samsung', waitSignin: 'Жду входа в новой вкладке…', creating: 'Создаю сертификат (до минуты)…',
+  s5: 'Установка', st_download: 'Скачиваю приложение…', st_signing: 'Подписываю пакет…', st_upload: 'Отправляю на телевизор…', st_installing: 'Телевизор устанавливает приложение…', st_uninstalling: 'Удаляю старую копию…',
+  done: 'Установлено: {name} {ver}', doneHint: 'Приложение появилось в списке приложений телевизора. Его можно включить прямо сейчас.', open: 'Открыть на телевизоре', opened: 'Запущено на телевизоре.', notOpened: 'Запустить не получилось — откройте его из списка приложений на телевизоре.',
+  more: 'Установить ещё', failed: 'Телевизор не принял пакет',
+  mismatch: 'Это приложение уже стоит на телевизоре и поставлено кем-то другим (другим сертификатом). Заменить его можно, только удалив: настройки приложения на телевизоре пропадут.',
+  replace: 'Удалить и поставить заново',
+  e_bad_address: 'Это не похоже на IP-адрес (пример: 192.168.1.20).', e_tv_unreachable: 'По этому адресу никто не отвечает. Телевизор включён и в той же сети?',
+  e_sdb_refused: 'Телевизор не принимает подключение: режим разработчика выключен или телевизор не перезагрузили после включения.',
+  e_sdb_rejected: 'Телевизор сбросил подключение: в Host PC IP вписан не адрес этого компьютера или телевизор не перезагрузили.',
+  e_sdb_timeout: 'Телевизор не отвечает. Он включён?', e_sdb_no_answer: 'Телевизор не отвечает. Он включён?', e_sdb_network: 'Ошибка сети при подключении к телевизору.', e_sdb_reset: 'Телевизор оборвал подключение. Перезагрузите телевизор и попробуйте снова.',
+  e_no_release: 'В последнем релизе {d} нет файла .wgt.', e_github_error: 'GitHub не ответил ({d}).', e_bad_repo: 'Напишите в виде владелец/репозиторий.',
+  e_not_wgt: 'Это не пакет веб-приложения Tizen (.wgt).', e_too_big: 'Файл слишком большой.', e_too_new: 'Этому приложению нужен телевизор новее (Tizen {d}).',
+  e_need_samsung: 'Сначала войдите в Samsung.', e_samsung_port: 'Порт 4794 занят (запущен другой установщик?). Закройте его и запустите программу снова.',
+  e_bad_samsung_answer: 'Неожиданный ответ Samsung. Попробуйте ещё раз.', e_busy: 'Ещё работаю, подождите.', e_internal: 'Что-то пошло не так: {d}', e_net: 'Окно установщика закрыто. Запустите программу снова.'
+},
+uk: {
+  s1: 'Виберіть телевізор', s1hint: 'Телевізор має бути увімкнений і підключений до тієї ж домашньої мережі, що й цей комп\'ютер.',
+  searching: 'Шукаю телевізори Samsung…', none: 'Телевізор не знайдено. Перевірте, що він увімкнений, або введіть його IP-адресу (на TV: Налаштування → Мережа → Стан мережі → Налаштування IP).',
+  again: 'Шукати знову', manual: 'IP-адреса телевізора', next: 'Далі', back: 'Назад',
+  devOn: 'режим розробника увімкнено', devOff: 'режим розробника вимкнено',
+  s2: 'Увімкніть на телевізорі режим розробника', s2hint: 'Це єдине, що робиться руками. Коли телевізор буде готовий, сторінка продовжить сама.',
+  d1: 'На телевізорі відкрийте <b>Apps</b> (список застосунків).', d2: 'Натисніть на пульті <b>1 2 3 4 5</b>. Немає цифр на пульті — утримуйте кнопку <b>123</b> і виберіть цифри на екрані.',
+  d3: 'У вікні, що з\'явиться, увімкніть <b>Developer mode — On</b> і впишіть у <b>Host PC IP</b> цю адресу:',
+  d4: 'Натисніть OK і <b>утримуйте кнопку живлення</b> на пульті 5 секунд, доки телевізор не перезавантажиться.',
+  waitingDev: 'Чекаю на телевізор…', devWrongIp: 'Режим розробника увімкнено, але в Host PC IP вписано {ip}. Впишіть адресу, показану вище, і перезавантажте телевізор.',
+  devOkRestart: 'Режим розробника увімкнено. Якщо підключитися не вдається — перезавантажте телевізор: утримуйте кнопку живлення 5 секунд.',
+  connecting: 'Підключаюся до телевізора…', tryConnect: 'Перевірити зараз',
+  s3: 'Що встановити', s3tv: '{name} · Tizen {ver}', appDefault: 'AssisTV', appDefaultHint: 'Остання версія з GitHub',
+  appFile: 'Свій файл .wgt', appFileHint: 'Будь-який пакет вебзастосунку Tizen з цього комп\'ютера', appRepo: 'З GitHub', appRepoHint: 'власник/репозиторій — .wgt з останнього релізу',
+  load: 'Завантажити', loading: 'Завантажую…', chosen: '{name} {ver}', install: 'Встановити на телевізор',
+  s4: 'Вхід у Samsung', s4hint: 'Телевізори з 2023 року (Tizen 7 і новіші) приймають лише застосунки, підписані вашим безкоштовним сертифікатом Samsung. Увійдіть один раз — сертифікат для цього телевізора програма зробить сама. Пароль іде лише до Samsung.',
+  signin: 'Увійти в Samsung', waitSignin: 'Чекаю на вхід у новій вкладці…', creating: 'Створюю сертифікат (до хвилини)…',
+  s5: 'Встановлення', st_download: 'Завантажую застосунок…', st_signing: 'Підписую пакет…', st_upload: 'Надсилаю на телевізор…', st_installing: 'Телевізор встановлює застосунок…', st_uninstalling: 'Видаляю стару копію…',
+  done: 'Встановлено: {name} {ver}', doneHint: 'Застосунок з\'явився у списку застосунків телевізора. Його можна увімкнути просто зараз.', open: 'Відкрити на телевізорі', opened: 'Запущено на телевізорі.', notOpened: 'Запустити не вдалося — відкрийте його зі списку застосунків на телевізорі.',
+  more: 'Встановити ще', failed: 'Телевізор не прийняв пакет',
+  mismatch: 'Цей застосунок уже стоїть на телевізорі й поставлений кимось іншим (іншим сертифікатом). Замінити його можна, лише видаливши: налаштування застосунку на телевізорі зникнуть.',
+  replace: 'Видалити й поставити заново',
+  e_bad_address: 'Це не схоже на IP-адресу (приклад: 192.168.1.20).', e_tv_unreachable: 'За цією адресою ніхто не відповідає. Телевізор увімкнений і в тій самій мережі?',
+  e_sdb_refused: 'Телевізор не приймає підключення: режим розробника вимкнено або телевізор не перезавантажили після ввімкнення.',
+  e_sdb_rejected: 'Телевізор скинув підключення: у Host PC IP вписано не адресу цього комп\'ютера або телевізор не перезавантажили.',
+  e_sdb_timeout: 'Телевізор не відповідає. Він увімкнений?', e_sdb_no_answer: 'Телевізор не відповідає. Він увімкнений?', e_sdb_network: 'Помилка мережі під час підключення до телевізора.', e_sdb_reset: 'Телевізор обірвав підключення. Перезавантажте телевізор і спробуйте знову.',
+  e_no_release: 'В останньому релізі {d} немає файлу .wgt.', e_github_error: 'GitHub не відповів ({d}).', e_bad_repo: 'Напишіть у вигляді власник/репозиторій.',
+  e_not_wgt: 'Це не пакет вебзастосунку Tizen (.wgt).', e_too_big: 'Файл завеликий.', e_too_new: 'Цьому застосунку потрібен новіший телевізор (Tizen {d}).',
+  e_need_samsung: 'Спершу увійдіть у Samsung.', e_samsung_port: 'Порт 4794 зайнятий (запущено інший установник?). Закрийте його й запустіть програму знову.',
+  e_bad_samsung_answer: 'Неочікувана відповідь Samsung. Спробуйте ще раз.', e_busy: 'Ще працюю, зачекайте.', e_internal: 'Щось пішло не так: {d}', e_net: 'Вікно установника закрито. Запустіть програму знову.'
+},
+de: {
+  s1: 'Fernseher auswählen', s1hint: 'Der Fernseher muss eingeschaltet und im selben Heimnetz wie dieser Computer sein.',
+  searching: 'Suche Samsung-Fernseher…', none: 'Kein Fernseher gefunden. Prüfen Sie, ob er eingeschaltet ist, oder geben Sie seine IP-Adresse ein (TV: Einstellungen → Netzwerk → Netzwerkstatus → IP-Einstellungen).',
+  again: 'Erneut suchen', manual: 'IP-Adresse des Fernsehers', next: 'Weiter', back: 'Zurück',
+  devOn: 'Entwicklermodus an', devOff: 'Entwicklermodus aus',
+  s2: 'Entwicklermodus am Fernseher einschalten', s2hint: 'Das ist der einzige Handgriff. Sobald der Fernseher bereit ist, geht es von selbst weiter.',
+  d1: 'Öffnen Sie am Fernseher <b>Apps</b> (die App-Liste).', d2: 'Drücken Sie auf der Fernbedienung <b>1 2 3 4 5</b>. Keine Zifferntasten? Halten Sie die Taste <b>123</b> gedrückt und wählen Sie die Ziffern auf dem Bildschirm.',
+  d3: 'Im erscheinenden Fenster <b>Developer mode</b> auf <b>On</b> stellen und bei <b>Host PC IP</b> diese Adresse eintragen:',
+  d4: 'OK drücken, dann die <b>Ein/Aus-Taste</b> der Fernbedienung 5 Sekunden <b>gedrückt halten</b>, bis der Fernseher neu startet.',
+  waitingDev: 'Warte auf den Fernseher…', devWrongIp: 'Der Entwicklermodus ist an, aber als Host PC IP steht {ip}. Tragen Sie die oben gezeigte Adresse ein und starten Sie den Fernseher neu.',
+  devOkRestart: 'Der Entwicklermodus ist an. Klappt die Verbindung nicht, starten Sie den Fernseher neu: Ein/Aus-Taste 5 Sekunden halten.',
+  connecting: 'Verbinde mit dem Fernseher…', tryConnect: 'Jetzt prüfen',
+  s3: 'Was installieren', s3tv: '{name} · Tizen {ver}', appDefault: 'AssisTV', appDefaultHint: 'Neueste Version von GitHub',
+  appFile: 'Eigene .wgt-Datei', appFileHint: 'Beliebiges Tizen-Web-App-Paket von diesem Computer', appRepo: 'Von GitHub', appRepoHint: 'Besitzer/Repository — die .wgt aus dem neuesten Release',
+  load: 'Laden', loading: 'Lade herunter…', chosen: '{name} {ver}', install: 'Auf dem Fernseher installieren',
+  s4: 'Bei Samsung anmelden', s4hint: 'Fernseher ab 2023 (Tizen 7+) nehmen nur Apps an, die mit Ihrem eigenen kostenlosen Samsung-Zertifikat signiert sind. Melden Sie sich einmal an — das Zertifikat für diesen Fernseher erstellt das Programm selbst. Ihr Passwort geht nur an Samsung.',
+  signin: 'Bei Samsung anmelden', waitSignin: 'Warte auf die Anmeldung im neuen Tab…', creating: 'Erstelle das Zertifikat (bis zu einer Minute)…',
+  s5: 'Installation', st_download: 'Lade die App herunter…', st_signing: 'Signiere das Paket…', st_upload: 'Sende an den Fernseher…', st_installing: 'Der Fernseher installiert die App…', st_uninstalling: 'Entferne die alte Kopie…',
+  done: 'Installiert: {name} {ver}', doneHint: 'Die App steht in der App-Liste des Fernsehers. Sie können sie gleich starten.', open: 'Auf dem Fernseher öffnen', opened: 'Auf dem Fernseher gestartet.', notOpened: 'Start nicht möglich — öffnen Sie die App aus der App-Liste des Fernsehers.',
+  more: 'Noch etwas installieren', failed: 'Der Fernseher hat das Paket abgelehnt',
+  mismatch: 'Diese App ist schon auf dem Fernseher und wurde von jemand anderem installiert (anderes Zertifikat). Ersetzen geht nur nach dem Entfernen — die Einstellungen der App auf dem Fernseher gehen verloren.',
+  replace: 'Entfernen und neu installieren',
+  e_bad_address: 'Das sieht nicht wie eine IP-Adresse aus (Beispiel: 192.168.1.20).', e_tv_unreachable: 'Unter dieser Adresse antwortet niemand. Ist der Fernseher an und im selben Netz?',
+  e_sdb_refused: 'Der Fernseher nimmt die Verbindung nicht an: Der Entwicklermodus ist aus oder der Fernseher wurde danach nicht neu gestartet.',
+  e_sdb_rejected: 'Der Fernseher hat die Verbindung getrennt: Bei Host PC IP steht nicht die Adresse dieses Computers oder der Fernseher wurde nicht neu gestartet.',
+  e_sdb_timeout: 'Der Fernseher antwortet nicht. Ist er an?', e_sdb_no_answer: 'Der Fernseher antwortet nicht. Ist er an?', e_sdb_network: 'Netzwerkfehler beim Verbinden mit dem Fernseher.', e_sdb_reset: 'Der Fernseher hat die Verbindung zurückgesetzt. Fernseher neu starten und erneut versuchen.',
+  e_no_release: 'Im neuesten Release von {d} gibt es keine .wgt-Datei.', e_github_error: 'GitHub hat nicht geantwortet ({d}).', e_bad_repo: 'Schreiben Sie es als Besitzer/Repository.',
+  e_not_wgt: 'Das ist kein Tizen-Web-App-Paket (.wgt).', e_too_big: 'Die Datei ist zu groß.', e_too_new: 'Diese App braucht einen neueren Fernseher (Tizen {d}).',
+  e_need_samsung: 'Melden Sie sich zuerst bei Samsung an.', e_samsung_port: 'Port 4794 ist belegt (läuft ein anderer Installer?). Schließen Sie ihn und starten Sie das Programm neu.',
+  e_bad_samsung_answer: 'Unerwartete Antwort von Samsung. Bitte erneut versuchen.', e_busy: 'Arbeite noch, einen Moment.', e_internal: 'Etwas ist schiefgelaufen: {d}', e_net: 'Das Installer-Fenster wurde geschlossen. Starten Sie das Programm erneut.'
+}
+};
+
+var P = {
+  en: { pasteHint: 'The page after sign-in did not continue? Copy everything it shows and paste it here:', pasteBtn: 'Continue',
+        quit: 'Close the installer', quitDone: 'The installer is closed. You can close this tab.',
+        failHint: 'Common reasons: the package is damaged or made for another kind of device, or the app has a mistake in it. The TV\'s answer is below — the app\'s author will understand it.' },
+  ru: { pasteHint: 'Страница после входа не пошла дальше? Скопируйте всё, что она показывает, и вставьте сюда:', pasteBtn: 'Продолжить',
+        quit: 'Закрыть установщик', quitDone: 'Установщик закрыт. Эту вкладку можно закрыть.',
+        failHint: 'Частые причины: пакет повреждён или сделан для другого устройства, либо в самом приложении ошибка. Ниже — ответ телевизора, автору приложения он будет понятен.' },
+  uk: { pasteHint: 'Сторінка після входу не пішла далі? Скопіюйте все, що вона показує, і вставте сюди:', pasteBtn: 'Продовжити',
+        quit: 'Закрити установник', quitDone: 'Установник закрито. Цю вкладку можна закрити.',
+        failHint: 'Часті причини: пакет пошкоджений або зроблений для іншого пристрою, або в самому застосунку помилка. Нижче — відповідь телевізора, автору застосунку вона буде зрозуміла.' },
+  de: { pasteHint: 'Die Seite nach der Anmeldung geht nicht weiter? Kopieren Sie alles, was sie zeigt, und fügen Sie es hier ein:', pasteBtn: 'Weiter',
+        quit: 'Installer schließen', quitDone: 'Der Installer ist geschlossen. Sie können diesen Tab schließen.',
+        failHint: 'Häufige Gründe: Das Paket ist beschädigt oder für ein anderes Gerät gemacht, oder die App selbst hat einen Fehler. Unten steht die Antwort des Fernsehers — der Autor der App versteht sie.' }
+};
+Object.keys(P).forEach(function (l) { Object.keys(P[l]).forEach(function (k) { L[l][k] = P[l][k]; }); });
+
+var lang = (function () {
+  var saved = ''; try { saved = localStorage.getItem('lang') || ''; } catch (e) {}
+  var l = saved || (navigator.language || 'en').slice(0, 2).toLowerCase();
+  return L[l] ? l : 'en';
+})();
+function t(key, p) {
+  var s = (L[lang] && L[lang][key]) || L.en[key] || key;
+  return s.replace(/\{(\w+)\}/g, function (m, k) { return p && p[k] !== undefined ? p[k] : ''; });
+}
+// сообщение об ошибке; подставляемые данные экранируются там, где текст идёт как HTML
+function errText(r) { return t(L.en['e_' + r.error] ? 'e_' + r.error : 'e_internal', { d: r.detail || r.error }); }
+
+function el(tag, attrs, kids) {
+  var n = document.createElement(tag);
+  Object.keys(attrs || {}).forEach(function (k) {
+    if (k === 'text') n.textContent = attrs[k];
+    else if (k === 'html') n.innerHTML = attrs[k];          // только свои строки переводов
+    else if (k === 'on') Object.keys(attrs.on).forEach(function (e) { n.addEventListener(e, attrs.on[e]); });
+    else if (attrs[k] !== false && attrs[k] != null) n.setAttribute(k, attrs[k] === true ? '' : attrs[k]);
+  });
+  (kids || []).forEach(function (c) { if (c) n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+  return n;
+}
+function api(method, path, body, raw) {
+  var opt = { method: method, headers: { 'X-Token': TOKEN } };
+  if (raw) opt.body = raw; else if (body) { opt.body = JSON.stringify(body); }
+  return fetch(path, opt).then(function (r) { return r.json(); }).catch(function () { return { error: 'net' }; });
+}
+
+var S = { step: 1, tvs: null, scanning: false, tv: null, pcIp: '', known: true, dev: null, conn: null, pkg: null, mode: 'default', msg: null, result: null, work: '' };
+var timer = null;
+function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+function go(step) { stopTimer(); S.step = step; S.msg = null; render(); }
+function msg(kind, text, pre) { S.msg = { kind: kind, text: text, pre: pre || '' }; render(); }
+
+function render() {
+  var card = document.getElementById('card');
+  var bars = document.getElementById('steps').children;
+  var pos = S.step <= 2 ? 1 : S.step === 3 ? 2 : S.step === 4 ? 3 : 4;
+  for (var i = 0; i < bars.length; i++) bars[i].className = i < pos ? 'on' : '';
+  card.textContent = '';
+  document.getElementById('quit').textContent = t('quit');
+  ({ 1: viewTv, 2: viewDev, 3: viewApp, 4: viewSamsung, 5: viewInstall })[S.step](card);
+  if (S.msg) card.appendChild(el('div', { class: 'msg ' + S.msg.kind }, [el('div', { text: S.msg.text }), S.msg.pre ? el('pre', { text: S.msg.pre }) : null]));
+}
+
+// ---------- 1. телевизор ----------
+function scan() {
+  S.scanning = true; render();
+  api('GET', '/api/scan').then(function (r) { S.scanning = false; S.tvs = r.tvs || []; if (r.error) S.msg = { kind: 'bad', text: errText(r) }; render(); });
+}
+function pickTv(host) {
+  S.msg = null; S.work = 'connecting'; render();
+  api('POST', '/api/tv', { host: host }).then(function (r) {
+    S.work = '';
+    if (r.error) return msg('bad', errText(r));
+    S.tv = r.tv; S.pcIp = r.pcIp; S.known = r.known; S.dev = r;
+    if (r.ready) connect(true); else go(2);
+  });
+}
+function viewTv(card) {
+  card.appendChild(el('h2', { text: t('s1') }));
+  card.appendChild(el('p', { text: t('s1hint') }));
+  if (S.scanning || S.work) card.appendChild(el('p', { class: 'plain' }, [el('span', { class: 'spin' }), t(S.work ? 'connecting' : 'searching')]));
+  else if (S.tvs && !S.tvs.length) card.appendChild(el('p', { class: 'plain', text: t('none') }));
+  var list = el('div', { class: 'list' });
+  (S.tvs || []).forEach(function (tv) {
+    var on = tv.developerMode === '1';
+    list.appendChild(el('button', { class: 'item', disabled: !!S.work, on: { click: function () { pickTv(tv.ip); } } }, [
+      el('span', { class: 'grow' }, [el('b', { text: tv.name }), el('small', { text: [tv.modelName, tv.ip].filter(Boolean).join(' · ') })]),
+      tv.developerMode ? el('span', { class: 'tag' + (on ? ' ok' : ''), text: t(on ? 'devOn' : 'devOff') }) : null
+    ]));
+  });
+  card.appendChild(list);
+  var input = el('input', { type: 'text', placeholder: t('manual') + ' — 192.168.1.20', inputmode: 'decimal' });
+  var submit = function () { if (input.value.trim()) pickTv(input.value.trim()); };
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+  card.appendChild(input);
+  card.appendChild(el('div', { class: 'row' }, [
+    el('button', { text: t('next'), disabled: !!S.work, on: { click: submit } }),
+    el('button', { class: 'ghost', text: t('again'), disabled: S.scanning || !!S.work, on: { click: scan } })
+  ]));
+}
+
+// ---------- 2. режим разработчика ----------
+function connect(fromList) {
+  stopTimer(); S.work = 'connecting'; S.msg = null; render();
+  api('POST', '/api/connect').then(function (r) {
+    S.work = '';
+    if (r.error) {
+      S.step = 2; S.msg = { kind: 'bad', text: errText(r) }; render();
+      return;
+    }
+    S.conn = r; go(3);
+    if (!S.pkg) choose('default');
+  });
+}
+function viewDev(card) {
+  card.appendChild(el('h2', { text: t('s2') }));
+  card.appendChild(el('p', { text: t('s2hint') }));
+  card.appendChild(el('ol', {}, [
+    el('li', { html: t('d1') }), el('li', { html: t('d2') }),
+    el('li', {}, [el('span', { html: t('d3') }), el('br'), el('span', { class: 'ip', text: S.pcIp || '?' })]),
+    el('li', { html: t('d4') })
+  ]));
+  var d = S.dev || {}, tv = d.tv || {};
+  var note = S.work ? t('connecting') : t('waitingDev');
+  if (!S.work && tv.developerMode === '1') note = tv.developerIP && tv.developerIP !== S.pcIp ? t('devWrongIp', { ip: tv.developerIP }) : t('devOkRestart');
+  card.appendChild(el('p', { class: 'plain' }, [el('span', { class: 'spin' }), note]));
+  card.appendChild(el('div', { class: 'row' }, [
+    el('button', { text: t('tryConnect'), disabled: !!S.work, on: { click: function () { connect(); } } }),
+    el('button', { class: 'ghost', text: t('back'), on: { click: function () { go(1); } } })
+  ]));
+  if (!timer) timer = setInterval(function () {
+    if (S.step !== 2 || S.work) return;
+    api('POST', '/api/tv', { host: S.tv.ip + ':' + S.tv.port }).then(function (r) {
+      if (S.step !== 2 || S.work || r.error) return;
+      var was = JSON.stringify(S.dev && S.dev.tv);
+      S.dev = r; S.pcIp = r.pcIp || S.pcIp;
+      if (r.ready && r.known) connect();
+      else if (was !== JSON.stringify(r.tv)) render();
+    });
+  }, 4000);
+}
+
+// ---------- 3. приложение ----------
+function choose(mode, arg) {
+  S.mode = mode; S.msg = null;
+  if (mode === 'file' && !arg) { S.pkg = null; return render(); }
+  if (mode === 'github' && !arg) { S.pkg = null; return render(); }
+  S.pkg = null; S.work = 'loading'; render();
+  var p = mode === 'default' ? api('POST', '/api/package/default')
+    : mode === 'github' ? api('POST', '/api/package/github', { repo: arg })
+    : api('POST', '/api/package/file?name=' + encodeURIComponent(arg.name), null, arg);
+  p.then(function (r) {
+    S.work = '';
+    if (r.error) return msg('bad', errText(r));
+    S.pkg = r; render();
+  });
+}
+function viewApp(card) {
+  card.appendChild(el('h2', { text: t('s3') }));
+  card.appendChild(el('p', { text: t('s3tv', { name: S.tv.name, ver: S.conn.platform || '?' }) }));
+  var list = el('div', { class: 'list' });
+  [['default', 'appDefault', 'appDefaultHint'], ['file', 'appFile', 'appFileHint'], ['github', 'appRepo', 'appRepoHint']].forEach(function (o) {
+    list.appendChild(el('button', { class: 'item' + (S.mode === o[0] ? ' sel' : ''), disabled: !!S.work, on: { click: function () { choose(o[0]); } } }, [
+      el('span', { class: 'grow' }, [el('b', { text: t(o[1]) }), el('small', { text: t(o[2]) })])
+    ]));
+  });
+  card.appendChild(list);
+  if (S.mode === 'file') {
+    card.appendChild(el('input', { type: 'file', accept: '.wgt', on: { change: function (e) { if (e.target.files[0]) choose('file', e.target.files[0]); } } }));
+  }
+  if (S.mode === 'github') {
+    var input = el('input', { type: 'text', placeholder: DEFAULT_REPO });
+    var load = function () { if (input.value.trim()) choose('github', input.value.trim()); };
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') load(); });
+    card.appendChild(input);
+    card.appendChild(el('div', { class: 'row' }, [el('button', { class: 'ghost', text: t('load'), disabled: !!S.work, on: { click: load } })]));
+  }
+  if (S.work) card.appendChild(el('p', { class: 'plain' }, [el('span', { class: 'spin' }), t('loading')]));
+  if (S.pkg) card.appendChild(el('div', { class: 'msg ok' }, [el('b', { text: t('chosen', { name: S.pkg.name, ver: S.pkg.version }) }), el('pre', { text: S.pkg.source + ' · ' + Math.round(S.pkg.size / 1024) + ' KB · ' + S.pkg.appId })]));
+  card.appendChild(el('div', { class: 'row' }, [
+    el('button', { text: t('install'), disabled: !S.pkg || !!S.work, on: { click: function () { if (S.conn.needSamsung && !S.conn.hasCert) go(4); else install(); } } }),
+    el('button', { class: 'ghost', text: t('back'), on: { click: function () { go(1); } } })
+  ]));
+}
+
+// ---------- 4. вход в Samsung ----------
+function signIn() {
+  var tab = window.open('about:blank', '_blank');
+  api('POST', '/api/samsung/start').then(function (r) {
+    if (r.error) { if (tab) tab.close(); return msg('bad', errText(r)); }
+    if (tab) tab.location = r.url; else window.location.href = r.url;
+    S.work = 'waitSignin'; S.msg = null; render();
+    stopTimer();
+    timer = setInterval(function () {
+      api('GET', '/api/status').then(function (st) {
+        var s = st.samsung || {};
+        if (s.state === 'creating' && S.work !== 'creating') { S.work = 'creating'; render(); }
+        if (s.state === 'ready') { stopTimer(); S.work = ''; S.conn.hasCert = true; install(); }
+        if (s.state === 'error') { stopTimer(); S.work = ''; msg('bad', errText({ error: s.error, detail: s.error })); }
+      });
+    }, 1500);
+  });
+}
+function viewSamsung(card) {
+  card.appendChild(el('h2', { text: t('s4') }));
+  card.appendChild(el('p', { text: t('s4hint') }));
+  if (S.work) card.appendChild(el('p', { class: 'plain' }, [el('span', { class: 'spin' }), t(S.work)]));
+  if (S.work === 'waitSignin') {
+    var paste = el('textarea', { rows: '5', style: 'width:100%;background:#0c1622;color:#e8eef5;border:1px solid #2a3d55;border-radius:8px;padding:9px 10px;font:13px ui-monospace,Consolas,monospace' });
+    card.appendChild(el('p', { text: t('pasteHint') }));
+    card.appendChild(paste);
+    card.appendChild(el('div', { class: 'row' }, [el('button', { class: 'ghost', text: t('pasteBtn'), on: { click: function () {
+      api('POST', '/api/samsung/paste', { text: paste.value }).then(function (r) { if (r.error) msg('bad', errText(r)); });
+    } } })]));
+  }
+  card.appendChild(el('div', { class: 'row' }, [
+    el('button', { text: t('signin'), disabled: S.work === 'creating', on: { click: signIn } }),
+    el('button', { class: 'ghost', text: t('back'), on: { click: function () { S.work = ''; go(3); } } })
+  ]));
+}
+
+// ---------- 5. установка ----------
+function install(uninstallFirst) {
+  stopTimer(); S.step = 5; S.result = null; S.msg = null; S.work = 'install'; S.progress = { stage: 'signing', pct: 0 }; render();
+  timer = setInterval(function () {
+    api('GET', '/api/status').then(function (st) { if (S.work === 'install' && st.progress && st.progress.stage) { S.progress = st.progress; render(); } });
+  }, 700);
+  api('POST', '/api/install', { uninstallFirst: !!uninstallFirst }).then(function (r) {
+    stopTimer(); S.work = '';
+    if (r.error === 'need_samsung') { S.conn.hasCert = false; return go(4); }
+    S.result = r; render();
+  });
+}
+function viewInstall(card) {
+  var r = S.result;
+  if (!r) {
+    card.appendChild(el('h2', { text: t('s5') }));
+    var p = S.progress || {};
+    card.appendChild(el('p', { class: 'plain' }, [el('span', { class: 'spin' }), t('st_' + (p.stage || 'signing'))]));
+    var bar = el('div', { class: 'bar' }, [el('i')]);
+    bar.firstChild.style.width = (p.pct || 0) + '%';
+    card.appendChild(bar);
+    return;
+  }
+  if (r.ok) {
+    card.appendChild(el('h2', { text: '✓ ' + t('done', { name: r.app.name, ver: r.app.version }) }));
+    card.appendChild(el('p', { text: t('doneHint') }));
+    card.appendChild(el('div', { class: 'row' }, [
+      el('button', { text: t('open'), on: { click: function () { api('POST', '/api/launch').then(function (x) { msg(x.ok ? 'ok' : 'bad', t(x.ok ? 'opened' : 'notOpened')); }); } } }),
+      el('button', { class: 'ghost', text: t('more'), on: { click: function () { go(3); } } }),
+      el('button', { class: 'ghost', text: t('quit'), on: { click: quit } })
+    ]));
+    return;
+  }
+  card.appendChild(el('h2', { text: r.error ? t('s5') : t('failed') }));
+  card.appendChild(el('div', { class: 'msg bad' }, [
+    el('div', { text: r.error ? errText(r) : (r.authorMismatch ? t('mismatch') : (r.line || '')) }),
+    !r.error && !r.authorMismatch ? el('p', { text: t('failHint') }) : null,
+    r.output ? el('pre', { text: r.output }) : null
+  ]));
+  card.appendChild(el('div', { class: 'row' }, [
+    r.authorMismatch ? el('button', { text: t('replace'), on: { click: function () { install(true); } } }) : el('button', { text: t('install'), on: { click: function () { install(); } } }),
+    el('button', { class: 'ghost', text: t('back'), on: { click: function () { go(3); } } })
+  ]));
+}
+
+// закрыть установщик: программа завершается (и окно терминала с ней); вкладку браузер закрыть не даёт —
+// window.close() срабатывает только для окон, открытых самой страницей
+function quit() {
+  api('POST', '/api/quit').then(function (r) {
+    if (r.error && r.error !== 'net') return msg('bad', errText(r));
+    stopTimer();
+    var card = document.getElementById('card');
+    card.textContent = '';
+    card.appendChild(el('h2', { text: '✓ ' + t('quitDone') }));
+    document.getElementById('steps').style.visibility = 'hidden';
+    document.getElementById('quit').style.display = 'none';
+    try { window.close(); } catch (e) {}
+  });
+}
+
+document.getElementById('lang').value = lang;
+document.getElementById('lang').addEventListener('change', function (e) {
+  lang = e.target.value; try { localStorage.setItem('lang', lang); } catch (x) {}
+  document.documentElement.lang = lang; render();
+});
+document.documentElement.lang = lang;
+document.getElementById('ver').textContent = 'v' + VERSION;
+document.getElementById('quit').addEventListener('click', quit);
+render();
+scan();
+</script>
+</body>
+</html>

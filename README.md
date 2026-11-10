@@ -137,8 +137,9 @@
 
 1. **[Аддон в Home Assistant](docs/install-ha-addons.md)** — Mosquitto, интеграция Samsung TV,
    аддон «AssisTV», ваши плейлисты и EPG.
-2. **[Приложение на телевизор](docs/install-tv.md)** — Tizen Studio, режим разработчика, сертификат,
-   сборка и установка, первый запуск.
+2. **[Приложение на телевизор](docs/install-tv.md)** — программа-установщик для Windows
+   ([скачать AssisTV-Installer.exe](https://github.com/indoor25/AssisTV/releases/latest/download/AssisTV-Installer.exe)):
+   включаете на телевизоре режим разработчика, остальное она делает сама. Без Tizen Studio.
 3. **[Карточка на панель Home Assistant](docs/ha-dashboards.md)** — управление с телефона и компьютера.
 4. **[Голос и чат (Assist)](docs/assist.md)** — чтобы можно было написать или сказать «включи Первый канал».
 

@@ -3,6 +3,13 @@
 Versions: the TV player (`config.xml`) and the Home Assistant add-on (`ha-addon/epg_builder/config.yaml`)
 are numbered separately. The installer (`installer/package.json`) has its own version too.
 
+## Player 1.4.10
+
+- Channel list with the programme guide on the right: the selected programme now sits at the same height for every
+  channel. Before, it jumped near the bottom on channels with an archive and near the top on channels without one.
+- The side channel list wraps around: ▼ on the last channel goes to the first, ▲ on the first goes to the last —
+  like the tiles on the home screen.
+
 ## Installer 0.1.0 (new)
 
 - **AssisTV Installer** (`installer/`) — installs the player, or any other `.wgt`, on a Samsung TV without Tizen Studio.

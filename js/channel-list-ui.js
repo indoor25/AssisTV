@@ -212,13 +212,15 @@ const ChannelListUI = (() => {
         return -1;
     }
 
-    /** delta: +1/-1 от Down/Up. Упирается в края, а не заворачивается — с заголовками групп
-     *  заворот дезориентирует. В режиме 'reorder' переставляет, в 'logo-edit' игнорируется. */
+    /** delta: +1/-1 от Down/Up. По кругу, как плитки главного экрана (просьба пользователя 12.11.2026):
+     *  с последнего канала — на первый и обратно. В режиме 'reorder' переставляет (без заворота),
+     *  в 'logo-edit' игнорируется. */
     function moveFocus(delta) {
         if (mode === 'reorder') { swapFocused(delta); return; }
         if (mode === 'logo-edit') return;
-        const next = nextChannelRow(focusedRow, delta);
-        if (next >= 0) setFocus(next);
+        let next = nextChannelRow(focusedRow, delta);
+        if (next < 0) next = nextChannelRow(delta > 0 ? -1 : rows.length, delta);
+        if (next >= 0 && next !== focusedRow) setFocus(next);
     }
 
     /** Меняет выбранный канал местами с соседом, но только внутри одной группы — переносить

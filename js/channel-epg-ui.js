@@ -31,6 +31,9 @@ const ChannelEpgUI = (() => {
     let programmes = [];
     let rowEls = [];
     let focused = -1;
+    let padTop = null;
+    let padBottom = null;
+    const ANCHOR = 0.3;        // где стоит выбранная передача: доля высоты списка от верха
 
     function init(el, opts = {}) {
         container = el;
@@ -97,6 +100,7 @@ const ChannelEpgUI = (() => {
 
         listEl.innerHTML = '';
         rowEls = [];
+        padTop = padBottom = null;
         if (!programmes.length) {
             const empty = document.createElement('div');
             empty.className = 'channel-epg-empty';
@@ -104,6 +108,10 @@ const ChannelEpgUI = (() => {
             listEl.appendChild(empty);
             return;
         }
+
+        padTop = document.createElement('div');
+        padTop.className = 'channel-epg-pad';
+        listEl.appendChild(padTop);
 
         programmes.forEach((p, i) => {
             const row = document.createElement('div');
@@ -144,6 +152,10 @@ const ChannelEpgUI = (() => {
             listEl.appendChild(row);
             rowEls.push(row);
         });
+
+        padBottom = document.createElement('div');
+        padBottom.className = 'channel-epg-pad';
+        listEl.appendChild(padBottom);
     }
 
     function setFocus(idx) {
@@ -153,11 +165,14 @@ const ChannelEpgUI = (() => {
         const row = rowEls[focused];
         row.classList.add('focused');
 
-        // держим выбранную передачу в видимой области (с запасом в одну строку сверху)
-        const top = row.offsetTop - row.offsetHeight;
-        const bottom = row.offsetTop + row.offsetHeight * 2;
-        if (top < listEl.scrollTop) listEl.scrollTop = Math.max(0, top);
-        else if (bottom > listEl.scrollTop + listEl.clientHeight) listEl.scrollTop = bottom - listEl.clientHeight;
+        // Выбранная передача всегда на одной высоте (ANCHOR от верха списка) — и у канала с архивом
+        // (много прошедших сверху), и без него (почти нет). Пустые вставки сверху и снизу дают место,
+        // чтобы и первая, и последняя передача могли встать туда же (просьба пользователя 12.11.2026).
+        const view = listEl.clientHeight;
+        const anchor = Math.round(view * ANCHOR);
+        if (padTop) padTop.style.height = anchor + 'px';
+        if (padBottom) padBottom.style.height = Math.max(0, view - anchor - row.offsetHeight) + 'px';
+        listEl.scrollTop = row.offsetTop - anchor;
     }
 
     /** Индекс передачи, идущей в момент at (или ближайшей после него; нет — последней). */

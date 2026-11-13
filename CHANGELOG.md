@@ -3,6 +3,17 @@
 Versions: the TV player (`config.xml`) and the Home Assistant add-on (`ha-addon/epg_builder/config.yaml`)
 are numbered separately. The installer (`installer/package.json`) has its own version too.
 
+## Add-on 2.22.6
+
+- Turning a TV off (voice, card, sleep timer) also publishes `iptv/tv_off` `{tv_id, host, at}`, so other add-ons
+  know at once that this TV is going dark (Home Assistant and the TV itself report it a few seconds later).
+
+## Add-on 2.22.5
+
+- Voice "turn on the TV" (`command: open` of `iptv/request`) answers as soon as the TV wakes up ("the TV is on,
+  the player will open in a few seconds") and starts the player in the background. Before, the assistant waited
+  for the player to come online — about 20 s of silence.
+
 ## Player 1.4.10
 
 - Channel list with the programme guide on the right: the selected programme now sits at the same height for every

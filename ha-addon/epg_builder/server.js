@@ -1208,7 +1208,7 @@ async function resolveTv(tvQuery) {
 }
 
 /** Плеер на телевизоре запущен и на связи: иначе включить TV, запустить плеер и дождаться online. */
-async function ensurePlayer(t) {
+async function ensurePlayer(t, opts = {}) {
     const target = tvTarget(t.tv_id);
     const state = await tvPowerState(target.host);
     // online без включённого TV — только что выключили, брокер ещё не заметил пропажу плеера
@@ -1221,6 +1221,12 @@ async function ensurePlayer(t) {
     if (tvOnline[t.tv_id]) return { ok: true };
     // Запускаем сразу: раньше ждали 8 с, вдруг TV сам откроет плеер, но по журналу (04–06.11.2026) этого
     // не случилось ни разу — только +8 с к голосовой команде. Плеер уже открыт — запуск выводит его на экран.
+    // quick — голосовое «включи телевизор»: TV проснулся — ответить сразу, плеер дозапускается сам (иначе Лиза молчит ~20 с)
+    if (opts.quick && state !== 'on') {
+        launchTvApp(target, DEFAULT_APP_ID).then(l => { if (!l.ok) log(`${t.tv_id}: плеер не запустился после включения TV`); })
+            .catch(e => log(`${t.tv_id}: запуск плеера: ${e.message}`));
+        return { ok: true, waking: true };
+    }
     const l = await launchTvApp(target, DEFAULT_APP_ID);
     if (!l.ok) return { ok: false, error: 'launch_failed' };
     const online = tvOnline[t.tv_id] || await waitFor(`iptv/${t.tv_id}/availability`, m => m === 'online', 45000);
@@ -1738,6 +1744,8 @@ async function requestMove(msg) {
 /** Выключить телевизор (интеграция Samsung Smart TV в HA). */
 async function tvPowerOff(t) {
     if (!t.media_player) return { ok: false, error: 'no_media_player' };
+    // Другим аддонам (Лиза): TV гаснет — ответ «выключила» говорить не на нём. HA и сам TV узнают об этом на секунды позже.
+    if (mqttClient) mqttClient.publish('iptv/tv_off', JSON.stringify({ tv_id: t.tv_id, host: (tvTarget(t.tv_id) || {}).host || '', at: Date.now() }));
     await haService('media_player', 'turn_off', { entity_id: t.media_player });
     return { ok: true };
 }
@@ -1793,8 +1801,8 @@ async function requestCommand(msg) {
     const base = { command, tv_id: t.tv_id, tv_name: t.name };
 
     if (command === 'open') {
-        const ready = await ensurePlayer(t);
-        return Object.assign(base, ready.ok ? { ok: true, message: tr('assist.playerOpened', { tv: t.name }) }
+        const ready = await ensurePlayer(t, { quick: true });
+        return Object.assign(base, ready.ok ? { ok: true, message: tr(ready.waking ? 'assist.tvWaking' : 'assist.playerOpened', { tv: t.name }) }
             : { ok: false, error: ready.error, message: tr('assist.playerStartFailed', { tv: t.name }) });
     }
     if (command === 'power_off') {

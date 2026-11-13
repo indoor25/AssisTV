@@ -500,6 +500,7 @@
         'assist.playerOffAll': 'Плеер сейчас не запущен ни на одном телевизоре',
         'assist.playerOff': 'Плеер на телевизоре «{tv}» не запущен',
         'assist.playerOpened': 'Плеер открыт на телевизоре «{tv}»',
+        'assist.tvWaking': 'Телевизор «{tv}» включён, плеер откроется через несколько секунд',
         'assist.playerStartFailed': 'Не получилось запустить плеер на телевизоре «{tv}»',
         'assist.noMediaPlayer': 'У телевизора «{tv}» не выбран media_player на странице аддона',
         'assist.powerOff': 'Выключаю телевизор «{tv}»',

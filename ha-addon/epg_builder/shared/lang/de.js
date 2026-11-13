@@ -500,6 +500,7 @@
         'assist.playerOffAll': 'Der Player läuft gerade auf keinem Fernseher',
         'assist.playerOff': 'Der Player läuft auf dem Fernseher „{tv}“ nicht',
         'assist.playerOpened': 'Der Player ist auf dem Fernseher „{tv}“ geöffnet',
+        'assist.tvWaking': 'Der Fernseher „{tv}“ ist an, der Player öffnet sich in ein paar Sekunden',
         'assist.playerStartFailed': 'Der Player konnte auf dem Fernseher „{tv}“ nicht gestartet werden',
         'assist.noMediaPlayer': 'Für den Fernseher „{tv}“ ist auf der Add-on-Seite kein media_player gewählt',
         'assist.powerOff': 'Der Fernseher „{tv}“ wird ausgeschaltet',

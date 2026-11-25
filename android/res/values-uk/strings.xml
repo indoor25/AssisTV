@@ -18,4 +18,8 @@
     <string name="edit">✎ Змінити</string>
     <string name="delete">Видалити</string>
     <string name="delete_ask">Видалити збережену адресу?</string>
+    <string name="link_ask">Зберегти цю адресу?
+
+%1$s</string>
+    <string name="link_bad">У посиланні немає адреси webhook.</string>
 </resources>

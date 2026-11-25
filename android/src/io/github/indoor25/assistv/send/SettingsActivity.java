@@ -125,6 +125,40 @@ public class SettingsActivity extends Activity {
         scroll.addView(box);
         setContentView(scroll);
         if (Sender.url(this).isEmpty()) editMode(); else showMode();
+        handleLink(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleLink(intent);
+    }
+
+    /**
+     * QR-код со страницы аддона AssisTV: assistv-send://setup?url=<адрес webhook>. Такую ссылку может открыть
+     * любая страница, поэтому адрес не сохраняется молча — сначала вопрос с самим адресом.
+     */
+    private void handleLink(Intent intent) {
+        if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction()) || intent.getData() == null) return;
+        android.net.Uri data = intent.getData();
+        intent.setData(null);   // поворот экрана не спросит второй раз
+        String u = data.getQueryParameter("url");
+        u = u == null ? "" : u.trim();
+        if (!u.matches("(?i)https?://\\S+/api/webhook/\\S+")) {
+            Sender.toast(this, getString(R.string.link_bad));
+            return;
+        }
+        final String found = u;
+        new AlertDialog.Builder(this)
+                .setMessage(getString(R.string.link_ask, masked(found)))
+                .setPositiveButton(R.string.save, (d, w) -> {
+                    Sender.saveUrl(this, found);
+                    Sender.toast(this, getString(R.string.saved));
+                    showMode();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     private TextView shown;

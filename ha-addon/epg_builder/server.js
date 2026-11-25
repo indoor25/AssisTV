@@ -52,6 +52,7 @@ const { createGuide } = require('./guide');
 const { createHistory } = require('./history');
 const { createPairing, makeToken, hashToken } = require('./pairing');
 const { attachMqttProxy } = require('./mqtt-proxy');
+const phoneLink = require('./phone-link');
 const { I18n } = requireShared('i18n.js');
 const { VodSources } = requireShared('vod-sources.js');
 const ChannelMatch = requireShared('channel-match.js');
@@ -620,7 +621,7 @@ function fromHassio(req) {
 function routeAccess(url) {
     if (url === '/' || url === '/tvs/register' || url === '/status' || /^\/posters\//.test(url)) return 'public';
     if (url === '/tvs.json' || /^\/tvs\//.test(url) || /^\/mapping/.test(url) || url === '/rebuild' ||
-        /^\/parental\/(pin|off|groups)$/.test(url) || /^\/pairing\//.test(url) || /^\/plugins\//.test(url)) return 'admin';
+        /^\/parental\/(pin|off|groups)$/.test(url) || /^\/pairing\//.test(url) || /^\/plugins\//.test(url) || url === '/phone-qr.js') return 'admin';
     return 'tv';
 }
 
@@ -1250,6 +1251,8 @@ function tvError(found, tvQuery) {
 /** ISO-время для страницы: «30 окт., 19:08» на языке аддона; нет или битое — «—». */
 // внизу страницы аддона: где код и как поддержать проект
 const PROJECT_URL = 'https://github.com/indoor25/AssisTV';
+// готовый пакет приложения «AssisTV: To TV» — лежит в репозитории рядом с исходниками (android/build.ps1)
+const APK_URL = PROJECT_URL + '/raw/main/android/AssisTV-To-TV.apk';
 const SUPPORT_URL = 'https://ko-fi.com/indoor25';
 const whenLabel = iso => {
     const d = new Date(iso || NaN);
@@ -2485,6 +2488,76 @@ function pluginError(e) {
     return k ? tr(k, { field: field || '' }) : String(e || '');
 }
 
+/**
+ * Раздел «Посмотреть позже с телефона»: что это, APK, и — если в HA есть автоматизация с webhook — адрес и QR для
+ * каждого человека (phone-link.js). Без автоматизации — только пояснение и ссылка на инструкцию. QR рисует браузер
+ * (phone-qr.js): если в HA не задан свой адрес, начало адреса webhook знает только он — адрес, по которому открыт HA.
+ */
+async function renderPhoneSection() {
+    const ph = await phoneLink.info();
+    const ruDocs = ['ru', 'uk'].includes(I18n.language());
+    const docs = PROJECT_URL + (ruDocs ? '/blob/main/docs/usage.md#посмотреть-позже' : '/blob/main/docs/en/usage.md#watch-later');
+    const apk = `
+        <div class="ph-card"><div class="ph-qr" data-qr="${esc(APK_URL)}"></div>
+          <div><b>1. ${esc(tr('page.phApk'))}</b><p class="muted">${esc(tr('page.phApkHint'))}</p>
+          <a href="${esc(APK_URL)}" target="_blank" rel="noopener">AssisTV-To-TV.apk</a></div></div>`;
+    let body;
+    if (ph.error) body = `<p class="note">${esc(tr('page.phError', { error: ph.error }))}</p>`;
+    else if (!ph.found) body = `<p class="note">${esc(tr('page.phNone'))} <a href="${esc(docs)}" target="_blank" rel="noopener">${esc(tr('page.phHowto'))}</a></p>`;
+    else {
+        const notes = [];
+        if (!ph.on) notes.push(tr('page.phOff'));
+        if (ph.localOnly) notes.push(tr('page.phLocal'));
+        const cards = ph.links.map(l => `
+        <div class="ph-card ph-person" data-url="${esc(l.url)}"><div class="ph-qr"></div>
+          <div><b>${esc(l.who || tr('page.phNoName'))}</b>
+          <p class="muted">${esc(tr('page.phScan'))}</p>
+          <button class="small" type="button">${esc(tr('page.phCopy'))}</button>
+          <a class="ph-open">${esc(tr('page.phOpen'))}</a>
+          <details><summary>${esc(tr('page.phShow'))}</summary><code class="ph-url"></code></details></div></div>`).join('');
+        body = `${notes.map(n => `<p class="note">${esc(n)}</p>`).join('')}
+        ${ph.base ? '' : `<p class="note" id="ph-nobase" data-text="${esc(tr('page.phNoBase'))}"></p>`}
+        <p class="muted">${esc(tr('page.phFound', { name: ph.name }))} ${esc(tr('page.phSecret'))}</p>
+        <p class="muted"><b>2. ${esc(tr('page.phStep2'))}</b></p>${cards}`;
+    }
+    return `
+      <section class="tv" id="phone-link">
+        <p class="muted">${esc(tr('page.phAbout'))}</p>
+        ${apk}
+        ${body}
+      </section>
+<script src="phone-qr.js"></script>
+<script>(function () {
+  var done = ${JSON.stringify(tr('page.phCopied')).replace(/</g, '\u003c')};
+  var origin = location.origin;
+  try { origin = window.top.location.origin; } catch (e) { /* не тот же адрес — остаётся свой */ }
+  function qr(el, text) {
+    if (!window.qrcode) return;
+    var q = window.qrcode(0, 'M'); q.addData(text); q.make();
+    el.innerHTML = q.createSvgTag({ cellSize: 4, margin: 4, scalable: true });
+  }
+  function copy(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
+    try { document.execCommand('copy'); } finally { t.remove(); }
+    return Promise.resolve();
+  }
+  document.querySelectorAll('[data-qr]').forEach(function (el) { qr(el, el.getAttribute('data-qr')); });
+  var nb = document.getElementById('ph-nobase');
+  if (nb) nb.textContent = nb.getAttribute('data-text').replace('{origin}', origin);
+  document.querySelectorAll('.ph-person').forEach(function (c) {
+    var url = c.getAttribute('data-url');
+    if (url.charAt(0) === '/') url = origin + url;
+    var link = 'assistv-send://setup?url=' + encodeURIComponent(url);   // как phoneLink.setupLink
+    qr(c.querySelector('.ph-qr'), link);
+    c.querySelector('.ph-open').href = link;
+    c.querySelector('.ph-url').textContent = url;
+    var b = c.querySelector('button');
+    b.onclick = function () { var old = b.textContent; copy(url).then(function () { b.textContent = done; setTimeout(function () { b.textContent = old; }, 1500); }); };
+  });
+})();</script>`;
+}
+
 async function renderPage({ ingress, parentalNote, pluginNote } = {}) {
     await pluginsReady;
     const list = Object.values(tvs).map(tvPublic);
@@ -2596,6 +2669,7 @@ tv_id: ${esc(t.tv_id)}</pre></details>
         ${p.origin !== 'builtin' ? `<form method="post" action="plugins/${encodeURIComponent(p.type)}/delete" onsubmit="return confirm(${esc(JSON.stringify(tr('page.plDeleteConfirm', { name })))})"><button class="danger">${esc(tr('page.plDelete'))}</button></form>` : ''}
       </section>`;
     }).join('');
+    const phoneHtml = await renderPhoneSection();
     const pluginTexts = { installed: tr('page.plInstalled'), ready: tr('page.plInstalledReady'), updated: tr('page.plUpdated'), loading: tr('common.loading') };
     const pluginsHtml = `
       <section class="tv" id="plugin-install">
@@ -2667,10 +2741,14 @@ body.mp-open{overflow:hidden}.mp-back[hidden]{display:none}
 .mp-badge{font-size:11px;background:#5a4a1a;border-radius:99px;padding:1px 7px;margin-left:6px}.mp-badge.opt{background:#333}
 .mp-foot{border-top:1px solid #2a2a2a;padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .mp-sel{flex:1;min-width:200px}.mp-btns{display:flex;gap:8px;flex-wrap:wrap}.mp-msg{width:100%;font-size:13px;color:#aaa}
+/* QR — белым квадратом: так камера читает его и на тёмной странице */
+.ph-card{display:flex;gap:14px;align-items:flex-start;margin:12px 0;flex-wrap:wrap}.ph-qr{background:#fff;border-radius:8px;width:150px;height:150px;flex:none}.ph-qr svg{width:100%;height:100%;display:block}
+.ph-card .muted{margin:4px 0 8px}.ph-open{margin-left:10px}.ph-url{display:block;margin-top:6px;overflow-wrap:anywhere;font-size:12px}
 @media (max-width:700px){.mp-cols{grid-template-columns:1fr;grid-template-rows:1fr 1fr}}
 </style></head><body>
 <h1>${esc(tr('page.pairTitle'))}</h1>${pairHtml}
 <h1>${esc(tr('page.tvs'))}</h1>${tvHtml}
+<h1 id="phone">${esc(tr('page.phTitle'))}</h1>${phoneHtml}
 <h1>${esc(tr('parental.title'))}</h1>${parentalHtml}
 <h1 id="plugins">${esc(tr('page.plTitle'))}</h1>${pluginsHtml}
 <h1>${esc(tr('playlists.title'))}</h1><p class="muted">${esc(tr('page.playlistsHint'))} <a href="status">/status</a> ·
@@ -2708,6 +2786,10 @@ const server = http.createServer(async (req, res) => {
             if (!admin) return send(res, 200, '<!doctype html><meta charset="utf-8"><title>IPTV</title><p style="font:16px system-ui">' + esc(tr('page.openInHa')) + '</p>', { 'Content-Type': 'text/html; charset=utf-8' });
             const q = new URL(req.url, 'http://x').searchParams;
             return send(res, 200, await renderPage({ ingress: true, parentalNote: q.get('parental'), pluginNote: q.get('pnote') }), { 'Content-Type': 'text/html; charset=utf-8' });
+        }
+        if (url === '/phone-qr.js') {
+            // QR-коды раздела «Посмотреть позже с телефона» (библиотека qrcode-generator, MIT)
+            return send(res, 200, fs.readFileSync(require.resolve('qrcode-generator')), { 'Content-Type': 'text/javascript; charset=utf-8' });
         }
         if (url === '/playlists.json') {
             return sendJson(res, 200, publicPlaylists({ withUrl: legacyReq }));

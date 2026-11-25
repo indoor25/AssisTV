@@ -144,9 +144,14 @@ Saw a movie in a feed, a chat or a trailer? Send the title from your phone, and 
    random `webhook_id` (it works as the address password) and put your own `notify.mobile_app_…` — the answer
    "Added: Dune (2021) — available in "Movies" ★ 7.7" arrives there. List the family phones in `phones`: add
    `?to=anna` to the address on Anna's phone and the answer goes to her, not to you.
-2. Install the **"AssisTV: To TV"** app from the [android/](../../android/README.md) folder — the ready file
-   [AssisTV-To-TV.apk](../../android/AssisTV-To-TV.apk): copy it to the phone and open it.
-3. Open it, paste `https://<your HA>/api/webhook/<your webhook_id>?to=<name>` and tap **Save**. The saved address
+2. Open the **AssisTV** panel in the HA sidebar → section **"Watch later" from a phone**. The add-on finds this
+   automation by itself and shows a QR code of the app and a QR code of the address for each person in `phones`
+   (no automation — only an explanation). Come back here when you move the app to a new phone.
+3. Install the **"AssisTV: To TV"** app: point the phone camera at the first QR code (or take
+   [AssisTV-To-TV.apk](../../android/AssisTV-To-TV.apk) from the [android/](../../android/README.md) folder, copy it to
+   the phone and open it). Then point the camera at the QR code of its owner — the app opens and asks
+   **"Save this address?"**. Manually works too: "Copy the address" on the add-on page, paste it into the app,
+   **Save** (an address like `https://<your HA>/api/webhook/<your webhook_id>?to=<name>`). The saved address
    cannot be changed by accident: **"✎ Edit"** to change it, **"Delete"** to clear it.
 4. Optionally: quick settings → pencil → add the **"To TV"** tile.
 

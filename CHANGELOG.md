@@ -3,6 +3,18 @@
 Versions: the TV player (`config.xml`) and the Home Assistant add-on (`ha-addon/epg_builder/config.yaml`)
 are numbered separately. The installer (`installer/package.json`) has its own version too.
 
+## Add-on 2.22.7
+
+- New section on the add-on page — **"Watch later" from a phone**: what the Android app does, a QR code to download
+  it, and, if Home Assistant has the "Watch later" webhook automation, a QR code and the address for every person in
+  its `phones` list (the add-on finds the automation itself). No such automation — only the explanation and a link
+  to the guide.
+
+## Android app "AssisTV: To TV" 1.0.2
+
+- Opens `assistv-send://setup?url=…` links (the QR codes on the add-on page) and asks before saving the address.
+  Older versions keep working with the same address.
+
 ## Add-on 2.22.6
 
 - Turning a TV off (voice, card, sleep timer) also publishes `iptv/tv_off` `{tv_id, host, at}`, so other add-ons

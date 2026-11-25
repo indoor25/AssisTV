@@ -50,7 +50,7 @@ ssh @ssh "rm -rf $dest && mkdir -p $dest/shared/lang $dest/card $dest/web $dest/
 scp -P $Port -i $Key -o StrictHostKeyChecking=accept-new `
     "$addon\config.yaml" "$addon\Dockerfile" "$addon\package.json" "$addon\build.js" "$addon\server.js" `
     "$addon\card-data.js" "$addon\vod.js" "$addon\tmdb.js" "$addon\kinopoisk.js" "$addon\archive.js" "$addon\parental.js" `
-    "$addon\favorites.js" "$addon\watchlist.js" "$addon\plugins.js" "$addon\guide.js" "$addon\history.js" "$addon\pairing.js" "$addon\mqtt-proxy.js" "$addon\sandbox.js" "$addon\plugin-host.js" "$addon\DOCS.md" `
+    "$addon\favorites.js" "$addon\watchlist.js" "$addon\phone-link.js" "$addon\plugins.js" "$addon\guide.js" "$addon\history.js" "$addon\pairing.js" "$addon\mqtt-proxy.js" "$addon\sandbox.js" "$addon\plugin-host.js" "$addon\DOCS.md" `
     "$addon\icon.png" "$addon\logo.png" `
     "${User}@${PiHost}:${dest}/"
 scp -P $Port -i $Key ($sharedFiles | ForEach-Object { Join-Path $shared $_ }) `

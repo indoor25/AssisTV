@@ -9,7 +9,8 @@ What it adds to the phone:
 - **"To TV"** in the menu of selected text (any app; Circle to Search shows only its own Copy and Translate);
 - **"To TV"** in the Share menu;
 - a quick-settings tile **"To TV"** that sends the clipboard;
-- one settings screen: the webhook address and "Send the clipboard".
+- one settings screen: the webhook address and "Send the clipboard";
+- `assistv-send://setup?url=<webhook address>` links (QR codes on the AssisTV add-on page): the app asks and saves the address.
 
 The only thing it does is `POST <webhook address>` with `{"text": "…"}`. The answer (what was found) comes as a
 Home Assistant notification from the automation.

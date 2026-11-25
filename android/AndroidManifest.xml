@@ -3,8 +3,8 @@
      Пункт в меню выделенного текста (PROCESS_TEXT), цель «Поделиться» (SEND) и плитка в шторке (буфер обмена). -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="io.github.indoor25.assistv.send"
-    android:versionCode="2"
-    android:versionName="1.0.1">
+    android:versionCode="3"
+    android:versionName="1.0.2">
 
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -19,10 +19,18 @@
         <activity
             android:name=".SettingsActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@android:style/Theme.DeviceDefault">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- QR-код со страницы аддона: assistv-send://setup?url=<адрес webhook> — приложение спросит и сохранит адрес -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="assistv-send" android:host="setup" />
             </intent-filter>
         </activity>
 
